@@ -190,17 +190,17 @@ struct RoomTimelineItemFactory: RoomTimelineItemFactoryProtocol {
         let currentEventId = event.id.eventID ?? ""
         MXLog.debug("RoomTimelineItemFactory: Current event ID (refined STT event): \(currentEventId)")
         
-        // Create transcription data
-        let transcription = TranscriptionData(eventId: currentEventId, // The ID of the refined STT event
-                                              referencedEventId: referencedEventId, // The ID of the audio message this transcription refers to
-                                              transcript: body,
-                                              timestamp: event.timestamp)
+        // Create refined STT data
+        let refinedSTTData = RefinedSTTData(eventId: currentEventId, // The ID of the refined STT event
+                                            referencedEventId: referencedEventId, // The ID of the audio message this transcription refers to
+                                            refinedSttBody: body,
+                                            timestamp: event.timestamp)
         
-        MXLog.debug("RoomTimelineItemFactory: Created TranscriptionData with eventId: \(transcription.eventId), referencedEventId: \(transcription.referencedEventId), transcript: \(transcription.transcript)")
+        MXLog.debug("RoomTimelineItemFactory: Created RefinedSTTData with eventId: \(refinedSTTData.eventId), referencedEventId: \(refinedSTTData.referencedEventId)")
         
-        // Add to transcription manager
-        ServiceLocator.shared.transcriptionManager.addTranscription(transcription)
-        MXLog.debug("RoomTimelineItemFactory: Added transcription to TranscriptionManager")
+        // Add to refined STT manager
+        ServiceLocator.shared.refinedSTTManager?.addRefinedSTTData(refinedSTTData)
+        MXLog.debug("RoomTimelineItemFactory: Added refined STT data to RefinedSTTManager")
         
         MXLog.debug("Processed refined STT event: \(event.id) referencing: \(referencedEventId)")
         return true

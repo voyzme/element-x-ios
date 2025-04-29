@@ -8,58 +8,9 @@
 import Foundation
 import SwiftUI
 
-// Define the structure for parsing the JSON transcription
-struct RefinedTranscriptionData: Codable {
-    let refined_transcription: String
-    let summary: String
-    let topics: [Topic]
-    
-    struct Topic: Codable, Identifiable {
-        let topic: String
-        let responses: [String]
-        
-        var id: String { topic }
-    }
-}
-
-// Helper class to handle async operations (since structs can't capture self in escaping closures)
-final class TranscriptionParser {
-    static let shared = TranscriptionParser()
-    
-    func parseTranscription(_ transcription: String, completion: @escaping (RefinedTranscriptionData?) -> Void) {
-        // Skip parsing if transcription is empty
-        guard !transcription.isEmpty else {
-            completion(nil)
-            return
-        }
-        
-        // Use a background thread for parsing to avoid UI lag
-        DispatchQueue.global(qos: .userInitiated).async {
-            do {
-                let decoder = JSONDecoder()
-                if let jsonData = transcription.data(using: .utf8) {
-                    let parsedResult = try decoder.decode(RefinedTranscriptionData.self, from: jsonData)
-                    
-                    // Return result on main thread
-                    DispatchQueue.main.async {
-                        completion(parsedResult)
-                    }
-                } else {
-                    DispatchQueue.main.async {
-                        completion(nil)
-                    }
-                }
-            } catch {
-                #if DEBUG
-                print("Failed to parse transcription JSON")
-                #endif
-                DispatchQueue.main.async {
-                    completion(nil)
-                }
-            }
-        }
-    }
-}
+// Import necessary frameworks
+import Foundation
+import SwiftUI
 
 struct VoiceMessageRoomTimelineView: View {
     @EnvironmentObject private var context: TimelineViewModel.Context
@@ -70,7 +21,6 @@ struct VoiceMessageRoomTimelineView: View {
     // States for toggling between different views
     @State private var showTranscription = false
     @State private var showTopicsModal = false
-    @State private var parsedData: RefinedTranscriptionData?
     
     init(timelineItem: VoiceMessageRoomTimelineItem, playerState: AudioPlayerState) {
         self.timelineItem = timelineItem
@@ -88,8 +38,9 @@ struct VoiceMessageRoomTimelineView: View {
                         .fixedSize(horizontal: false, vertical: true)
                         .frame(maxWidth: 400)
                     
-                    // Only show buttons if we have parsed data
-                    if parsedData != nil {
+                    // Only show buttons if we have parsed data from the refined STT
+                    if let refinedSTTData = timelineItem.content.refinedSTTData,
+                       refinedSTTData.summary != nil || refinedSTTData.refinedTranscription != nil || refinedSTTData.topics != nil {
                         // Transcription toggle button
                         Button(action: {
                             withAnimation {
@@ -118,11 +69,12 @@ struct VoiceMessageRoomTimelineView: View {
                     }
                 }
                 
-                // Display transcription content if available
-                if let transcription = timelineItem.content.transcription, !transcription.isEmpty {
+                // Display refined STT content if available
+                if let refinedSTTData = timelineItem.content.refinedSTTData {
                     Group {
-                        if let parsedData = parsedData {
-                            Text(showTranscription ? parsedData.refined_transcription : parsedData.summary)
+                        if let summary = refinedSTTData.summary, let refinedTranscription = refinedSTTData.refinedTranscription {
+                            // Display either summary or refined transcription based on toggle state
+                            Text(showTranscription ? refinedTranscription : summary)
                                 .font(.compound.bodyMD)
                                 .foregroundColor(.compound.textPrimary)
                                 .lineLimit(5) // Limit lines to improve scrolling performance
@@ -130,32 +82,40 @@ struct VoiceMessageRoomTimelineView: View {
                                 .background(Color.compound.bgSubtleSecondary)
                                 .cornerRadius(8)
                                 .transition(.opacity)
-                        } else {
-                            // Fallback to displaying raw transcription if parsing fails
-                            Text(transcription)
+                        } else if let summary = refinedSTTData.summary {
+                            // Only summary available
+                            Text(summary)
                                 .font(.compound.bodyMD)
                                 .foregroundColor(.compound.textPrimary)
-                                .lineLimit(3) // Limit lines to improve scrolling performance
+                                .lineLimit(5)
                                 .padding(8)
                                 .background(Color.compound.bgSubtleSecondary)
                                 .cornerRadius(8)
-                                .onAppear {
-                                    // Trigger parsing if not already done
-                                    if parsedData == nil {
-                                        TranscriptionParser.shared.parseTranscription(transcription) { result in
-                                            if let result = result {
-                                                parsedData = result
-                                            }
-                                        }
-                                    }
-                                }
+                        } else if let refinedTranscription = refinedSTTData.refinedTranscription {
+                            // Only refined transcription available
+                            Text(refinedTranscription)
+                                .font(.compound.bodyMD)
+                                .foregroundColor(.compound.textPrimary)
+                                .lineLimit(5)
+                                .padding(8)
+                                .background(Color.compound.bgSubtleSecondary)
+                                .cornerRadius(8)
+                        } else {
+                            // Fallback to displaying raw refined STT body
+                            Text(refinedSTTData.refinedSttBody)
+                                .font(.compound.bodyMD)
+                                .foregroundColor(.compound.textPrimary)
+                                .lineLimit(3)
+                                .padding(8)
+                                .background(Color.compound.bgSubtleSecondary)
+                                .cornerRadius(8)
                         }
                     }
                 }
             }
             .sheet(isPresented: $showTopicsModal) {
-                if let parsedData = parsedData {
-                    TopicsModalView(topics: parsedData.topics)
+                if let refinedSTTData = timelineItem.content.refinedSTTData, let topics = refinedSTTData.topics {
+                    TopicsModalView(topics: topics)
                 }
             }
         }
@@ -184,7 +144,7 @@ struct VoiceMessageRoomTimelineView: View {
 
 // Modal view for displaying topics and responses
 struct TopicsModalView: View {
-    let topics: [RefinedTranscriptionData.Topic]
+    let topics: [RefinedSTTData.Topic]
     @State private var copiedResponse: String? = nil
     
     var body: some View {

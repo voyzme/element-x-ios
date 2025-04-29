@@ -57,67 +57,71 @@ class VoiceMessageRoomTimelineItem: EventBasedMessageTimelineItemProtocol, Equat
         // Log the initialization of the voice message timeline item
         MXLog.debug("VoiceMessageRoomTimelineItem: Initialized with ID: \(id), eventID: \(id.eventID ?? "nil")")
         
-        // Observe transcriptions from the TranscriptionManager
-        MXLog.debug("VoiceMessageRoomTimelineItem: About to call observeTranscriptions()")
-        observeTranscriptions()
+        // Observe refined STT data from the RefinedSTTManager
+        MXLog.debug("VoiceMessageRoomTimelineItem: About to call observeRefinedSTTData()")
+        observeRefinedSTTData()
     }
     
-    private func observeTranscriptions() {
-        MXLog.debug("VoiceMessageRoomTimelineItem: observeTranscriptions() called")
+    private func observeRefinedSTTData() {
+        MXLog.debug("VoiceMessageRoomTimelineItem: observeRefinedSTTData() called")
         
-        // Check if the TranscriptionManager is available
-        if let transcriptionManager = ServiceLocator.shared.transcriptionManager {
-            MXLog.debug("VoiceMessageRoomTimelineItem: TranscriptionManager is available, subscribing to transcriptionsPublisher")
-            setupTranscriptionObserver(transcriptionManager)
+        // Check if the RefinedSTTManager is available
+        if let refinedSTTManager = ServiceLocator.shared.refinedSTTManager {
+            MXLog.debug("VoiceMessageRoomTimelineItem: RefinedSTTManager is available, subscribing to refinedSTTDataPublisher")
+            setupRefinedSTTDataObserver(refinedSTTManager)
         } else {
-            MXLog.warning("VoiceMessageRoomTimelineItem: TranscriptionManager not available, will try again later")
+            MXLog.warning("VoiceMessageRoomTimelineItem: RefinedSTTManager not available, will try again later")
             
-            // Set up a timer to check for the TranscriptionManager periodically
+            // Set up a timer to check for the RefinedSTTManager periodically
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
                 guard let self = self else { return }
-                MXLog.debug("VoiceMessageRoomTimelineItem: Checking for TranscriptionManager again")
-                self.observeTranscriptions()
+                MXLog.debug("VoiceMessageRoomTimelineItem: Checking for RefinedSTTManager again")
+                self.observeRefinedSTTData()
             }
         }
     }
     
-    private func setupTranscriptionObserver(_ transcriptionManager: TranscriptionManagerProtocol) {
-        MXLog.debug("VoiceMessageRoomTimelineItem: Setting up transcription observer")
+    private func setupRefinedSTTDataObserver(_ refinedSTTManager: RefinedSTTManagerProtocol) {
+        MXLog.debug("VoiceMessageRoomTimelineItem: Setting up refined STT data observer")
         
-        transcriptionManager.transcriptionsPublisher
+        refinedSTTManager.refinedSTTDataPublisher
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] transcriptions in
+            .sink { [weak self] refinedSTTDataDict in
                 guard let self = self else { return }
                 
-                // Check if there's a transcription for this voice message
+                // Check if there's refined STT data for this voice message
                 if let eventID = self.id.eventID {
-                    MXLog.debug("VoiceMessageRoomTimelineItem: Checking for transcription for voice message event ID: \(eventID)")
+                    MXLog.debug("VoiceMessageRoomTimelineItem: Checking for refined STT data for voice message event ID: \(eventID)")
                     
-                    // Log all available transcriptions for debugging
-                    MXLog.debug("VoiceMessageRoomTimelineItem: Available transcriptions: \(transcriptions.count)")
-                    for (key, transcription) in transcriptions {
-                        MXLog.debug("VoiceMessageRoomTimelineItem: Transcription key: \(key), referencedEventId: \(transcription.referencedEventId), transcript: \(transcription.transcript)")
+                    // Log all available refined STT data for debugging
+                    MXLog.debug("VoiceMessageRoomTimelineItem: Available refined STT data: \(refinedSTTDataDict.count)")
+                    if let refinedSTTData = refinedSTTDataDict[eventID] {
+                        MXLog.debug("VoiceMessageRoomTimelineItem: Found refined STT data for voice message: \(eventID)")
+                        // Set both the raw refined STT body and the parsed data
+                        self.content.refinedSttBody = refinedSTTData.refinedSttBody
+                        self.content.refinedSTTData = refinedSTTData
                     }
                     
-                    // Iterate through all transcriptions and check if any of them reference this voice message event ID
+                    // Iterate through all refined STT data and check if any of them reference this voice message event ID
                     var found = false
-                    for (_, transcription) in transcriptions {
-                        MXLog.debug("VoiceMessageRoomTimelineItem: Checking if transcription.referencedEventId: \(transcription.referencedEventId) matches voice message event ID: \(eventID)")
+                    for (_, refinedSTTData) in refinedSTTDataDict {
+                        MXLog.debug("VoiceMessageRoomTimelineItem: Checking if refinedSTTData.referencedEventId: \(refinedSTTData.referencedEventId) matches voice message event ID: \(eventID)")
                         
-                        if transcription.referencedEventId == eventID {
-                            // Update the content with the transcription
+                        if refinedSTTData.referencedEventId == eventID {
+                            // Update the content with the refined STT data
                             var updatedContent = self.content
-                            updatedContent.transcription = transcription.transcript
+                            updatedContent.refinedSttBody = refinedSTTData.refinedSttBody
+                            updatedContent.refinedSTTData = refinedSTTData
                             self.content = updatedContent
                             
-                            MXLog.debug("VoiceMessageRoomTimelineItem: MATCH FOUND! Updated voice message with transcription: \(eventID)")
+                            MXLog.debug("VoiceMessageRoomTimelineItem: MATCH FOUND! Updated voice message with refined STT data: \(eventID)")
                             found = true
                             break
                         }
                     }
                     
                     if !found {
-                        MXLog.debug("VoiceMessageRoomTimelineItem: No matching transcription found for voice message event ID: \(eventID)")
+                        MXLog.debug("VoiceMessageRoomTimelineItem: No matching refined STT data found for voice message event ID: \(eventID)")
                     }
                 }
             }

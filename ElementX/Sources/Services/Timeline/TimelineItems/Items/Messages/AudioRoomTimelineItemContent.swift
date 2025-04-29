@@ -18,5 +18,8 @@ struct AudioRoomTimelineItemContent: Hashable {
     let waveform: EstimatedWaveform?
     let source: MediaSourceProxy?
     let contentType: UTType?
-    var transcription: String?
+    var refinedSttBody: String?
+    
+    /// Parsed refined STT data with summary, refined transcription, and topics
+    var refinedSTTData: RefinedSTTData?
 }

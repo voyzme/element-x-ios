@@ -363,8 +363,8 @@ class AppCoordinator: AppCoordinatorProtocol, AuthenticationFlowCoordinatorDeleg
         posthogAnalyticsClient.updateSuperProperties(AnalyticsEvent.SuperProperties(appPlatform: .EXI, cryptoSDK: .Rust, cryptoSDKVersion: sdkGitSha()))
         ServiceLocator.shared.register(analytics: AnalyticsService(client: posthogAnalyticsClient,
                                                                    appSettings: appSettings))
-        // Register the transcription manager for voice message transcriptions
-        ServiceLocator.shared.register(transcriptionManager: AppCoordinator.createTranscriptionManager())
+        // Register the refined STT manager for voice message transcriptions
+        ServiceLocator.shared.register(refinedSTTManager: AppCoordinator.createRefinedSTTManager())
     }
     
     /// Perform any required migrations for the app to function correctly.
@@ -865,30 +865,30 @@ class AppCoordinator: AppCoordinatorProtocol, AuthenticationFlowCoordinatorDeleg
         clientProxyObserver = nil
     }
     
-    /// Create a TranscriptionManager instance that conforms to TranscriptionManagerProtocol
-    private static func createTranscriptionManager() -> TranscriptionManagerProtocol {
-        // Simple implementation of TranscriptionManagerProtocol
-        class TranscriptionManager: TranscriptionManagerProtocol {
-            private var transcriptions = [String: TranscriptionData]()
-            private let transcriptionsSubject = CurrentValueSubject<[String: TranscriptionData], Never>([:])
+    /// Create a RefinedSTTManager instance that conforms to RefinedSTTManagerProtocol
+    private static func createRefinedSTTManager() -> RefinedSTTManagerProtocol {
+        // Simple implementation of RefinedSTTManagerProtocol
+        class RefinedSTTManager: RefinedSTTManagerProtocol {
+            private var refinedSTTDataDict: [String: RefinedSTTData] = [:]
+            private let refinedSTTDataSubject = CurrentValueSubject<[String: RefinedSTTData], Never>([:])
             
-            var transcriptionsPublisher: AnyPublisher<[String: TranscriptionData], Never> {
-                transcriptionsSubject.eraseToAnyPublisher()
+            var refinedSTTDataPublisher: AnyPublisher<[String: RefinedSTTData], Never> {
+                refinedSTTDataSubject.eraseToAnyPublisher()
             }
             
-            func addTranscription(_ transcription: TranscriptionData) {
-                // Store the transcription with the referencedEventId as the key
-                transcriptions[transcription.referencedEventId] = transcription
-                // Send the updated transcriptions to subscribers
-                transcriptionsSubject.send(transcriptions)
+            func addRefinedSTTData(_ refinedSTTData: RefinedSTTData) {
+                // Store the refined STT data with the referencedEventId as the key
+                refinedSTTDataDict[refinedSTTData.referencedEventId] = refinedSTTData
+                // Send the updated refined STT data to subscribers
+                refinedSTTDataSubject.send(refinedSTTDataDict)
             }
             
-            func getTranscription(forAudioEventId eventId: String) -> TranscriptionData? {
-                transcriptions[eventId]
+            func getRefinedSTTData(forAudioEventId eventId: String) -> RefinedSTTData? {
+                refinedSTTDataDict[eventId]
             }
         }
         
-        return TranscriptionManager()
+        return RefinedSTTManager()
     }
 
     private func startSync() {
