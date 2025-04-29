@@ -74,41 +74,49 @@ struct VoiceMessageRoomTimelineView: View {
                     Group {
                         if let summary = refinedSTTData.summary, let refinedTranscription = refinedSTTData.refinedTranscription {
                             // Display either summary or refined transcription based on toggle state
-                            Text(showTranscription ? refinedTranscription : summary)
-                                .font(.compound.bodyMD)
-                                .foregroundColor(.compound.textPrimary)
-                                .lineLimit(5) // Limit lines to improve scrolling performance
-                                .padding(8)
-                                .background(Color.compound.bgSubtleSecondary)
-                                .cornerRadius(8)
-                                .transition(.opacity)
+                            ScrollView {
+                                Text(showTranscription ? refinedTranscription : summary)
+                                    .font(.compound.bodyMD)
+                                    .foregroundColor(.compound.textPrimary)
+                                    .padding(8)
+                            }
+                            .frame(maxHeight: 150) // Set maximum height for the scroll view
+                            .background(Color.compound.bgSubtleSecondary)
+                            .cornerRadius(8)
+                            .transition(.opacity)
                         } else if let summary = refinedSTTData.summary {
                             // Only summary available
-                            Text(summary)
-                                .font(.compound.bodyMD)
-                                .foregroundColor(.compound.textPrimary)
-                                .lineLimit(5)
-                                .padding(8)
-                                .background(Color.compound.bgSubtleSecondary)
-                                .cornerRadius(8)
+                            ScrollView {
+                                Text(summary)
+                                    .font(.compound.bodyMD)
+                                    .foregroundColor(.compound.textPrimary)
+                                    .padding(8)
+                            }
+                            .frame(maxHeight: 150) // Set maximum height for the scroll view
+                            .background(Color.compound.bgSubtleSecondary)
+                            .cornerRadius(8)
                         } else if let refinedTranscription = refinedSTTData.refinedTranscription {
                             // Only refined transcription available
-                            Text(refinedTranscription)
-                                .font(.compound.bodyMD)
-                                .foregroundColor(.compound.textPrimary)
-                                .lineLimit(5)
-                                .padding(8)
-                                .background(Color.compound.bgSubtleSecondary)
-                                .cornerRadius(8)
+                            ScrollView {
+                                Text(refinedTranscription)
+                                    .font(.compound.bodyMD)
+                                    .foregroundColor(.compound.textPrimary)
+                                    .padding(8)
+                            }
+                            .frame(maxHeight: 150) // Set maximum height for the scroll view
+                            .background(Color.compound.bgSubtleSecondary)
+                            .cornerRadius(8)
                         } else {
                             // Fallback to displaying raw refined STT body
-                            Text(refinedSTTData.refinedSttBody)
-                                .font(.compound.bodyMD)
-                                .foregroundColor(.compound.textPrimary)
-                                .lineLimit(3)
-                                .padding(8)
-                                .background(Color.compound.bgSubtleSecondary)
-                                .cornerRadius(8)
+                            ScrollView {
+                                Text(refinedSTTData.refinedSttBody)
+                                    .font(.compound.bodyMD)
+                                    .foregroundColor(.compound.textPrimary)
+                                    .padding(8)
+                            }
+                            .frame(maxHeight: 150) // Set maximum height for the scroll view
+                            .background(Color.compound.bgSubtleSecondary)
+                            .cornerRadius(8)
                         }
                     }
                 }
