@@ -99,6 +99,12 @@ class TimelineViewModel: TimelineViewModelType, TimelineViewModelProtocol {
         setupSubscriptions()
         setupDirectRoomSubscriptionsIfNeeded()
         
+        // Set up observer for draft text notifications
+        NotificationCenter.default.addObserver(self,
+                                               selector: #selector(handleSetDraftTextNotification(_:)),
+                                               name: Notification.Name("ElementX.SetDraftText"),
+                                               object: nil)
+        
         // Set initial values for redacting from the macOS context menu.
         Task { await updatePermissions() }
 
@@ -632,6 +638,18 @@ class TimelineViewModel: TimelineViewModelType, TimelineViewModelProtocol {
         scrollToBottom()
     }
         
+    @objc private func handleSetDraftTextNotification(_ notification: Notification) {
+        guard let userInfo = notification.userInfo,
+              let text = userInfo["text"] as? String else {
+            return
+        }
+        
+        // Use the actionsSubject to send the composer action
+        // This is how text is set in the composer throughout the codebase
+        let composerAction = TimelineComposerAction.setText(plainText: text, htmlText: nil)
+        actionsSubject.send(.composer(action: composerAction))
+    }
+    
     private func trackComposerMode(_ mode: ComposerMode) {
         var isEdit = false
         var isReply = false

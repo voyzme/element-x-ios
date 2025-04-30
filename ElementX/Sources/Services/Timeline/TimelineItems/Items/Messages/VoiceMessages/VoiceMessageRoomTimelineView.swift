@@ -123,7 +123,7 @@ struct VoiceMessageRoomTimelineView: View {
             }
             .sheet(isPresented: $showTopicsModal) {
                 if let refinedSTTData = timelineItem.content.refinedSTTData, let topics = refinedSTTData.topics {
-                    TopicsModalView(topics: topics)
+                    TopicsModalView(topics: topics, timelineItem: timelineItem, context: context)
                 }
             }
         }
@@ -150,48 +150,99 @@ struct VoiceMessageRoomTimelineView: View {
     }
 }
 
+// Response button component to simplify the view hierarchy
+struct ResponseButton: View {
+    let response: String
+    let isSelected: Bool
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            HStack {
+                Text(response)
+                    .lineLimit(3)
+                
+                if isSelected {
+                    Spacer()
+                    Text("Selected!")
+                        .foregroundColor(.green)
+                        .font(.caption)
+                }
+            }
+            .padding()
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.compound.bgSubtlePrimary)
+            .cornerRadius(8)
+        }
+    }
+}
+
+// Topic section component to further break down the view hierarchy
+struct TopicSection: View {
+    let topic: RefinedSTTData.Topic
+    let timelineItem: VoiceMessageRoomTimelineItem
+    let context: TimelineViewModel.Context
+    let selectedResponse: String?
+    let onResponseSelected: (String) -> Void
+    
+    var body: some View {
+        Section(header: Text(topic.topic).font(.headline)) {
+            ForEach(topic.responses, id: \.self) { response in
+                ResponseButton(response: response,
+                               isSelected: selectedResponse == response,
+                               action: {
+                                   // Create reply draft with the selected response
+                                   // Include the topic name in the reply text to make it clear what the voice message was about
+                                   let replyText = "Re: \(topic.topic) → \(response)"
+                        
+                                   // First start replying to the message
+                                   context.send(viewAction: .handleTimelineItemMenuAction(itemID: timelineItem.id,
+                                                                                          action: .reply(isThread: false)))
+                        
+                                   // Wait a moment for the reply to be set up, then set the text
+                                   DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                       // Set the draft text using notification
+                                       NotificationCenter.default.post(name: Notification.Name("ElementX.SetDraftText"),
+                                                                       object: nil,
+                                                                       userInfo: ["text": replyText])
+                                   }
+                        
+                                   // Notify parent about selection
+                                   onResponseSelected(response)
+                               })
+            }
+        }
+    }
+}
+
 // Modal view for displaying topics and responses
 struct TopicsModalView: View {
     let topics: [RefinedSTTData.Topic]
-    @State private var copiedResponse: String? = nil
+    let timelineItem: VoiceMessageRoomTimelineItem
+    let context: TimelineViewModel.Context
+    @State private var selectedResponse: String? = nil
+    @Environment(\.presentationMode) var presentationMode
     
     var body: some View {
         NavigationView {
             List {
                 ForEach(topics) { topic in
-                    Section(header: Text(topic.topic).font(.headline)) {
-                        ForEach(topic.responses, id: \.self) { response in
-                            Button(action: {
-                                UIPasteboard.general.string = response
-                                copiedResponse = response
-                                // Clear the copied message after a delay
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                                    if copiedResponse == response {
-                                        copiedResponse = nil
-                                    }
-                                }
-                            }) {
-                                HStack {
-                                    Text(response)
-                                        .lineLimit(3)
-                                    
-                                    if copiedResponse == response {
-                                        Spacer()
-                                        Text("Copied!")
-                                            .foregroundColor(.green)
-                                            .font(.caption)
-                                    }
-                                }
-                                .padding()
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .background(Color.compound.bgSubtlePrimary)
-                                .cornerRadius(8)
-                            }
-                        }
-                    }
+                    TopicSection(topic: topic,
+                                 timelineItem: timelineItem,
+                                 context: context,
+                                 selectedResponse: selectedResponse,
+                                 onResponseSelected: { response in
+                                     // Show feedback
+                                     selectedResponse = response
+                            
+                                     // Dismiss the modal after a short delay
+                                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                                         presentationMode.wrappedValue.dismiss()
+                                     }
+                                 })
                 }
             }
-            .listStyle(InsetGroupedListStyle()) // More efficient list style
+            .listStyle(InsetGroupedListStyle())
             .navigationTitle("Topics & Responses")
             .navigationBarTitleDisplayMode(.inline)
         }
