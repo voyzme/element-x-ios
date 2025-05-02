@@ -173,13 +173,13 @@ final class AppSettings {
     
     var pusherAppId: String {
         #if DEBUG
-        InfoPlistReader.main.baseBundleIdentifier + ".ios.dev"
+        InfoPlistReader.main.baseBundleIdentifier
         #else
-        InfoPlistReader.main.baseBundleIdentifier + ".ios.prod"
+        InfoPlistReader.main.baseBundleIdentifier
         #endif
     }
     
-    let pushGatewayBaseURL: URL = "https://matrix.org/_matrix/push/v1/notify"
+    let pushGatewayBaseURL: URL = "http://sygnal:5000/_matrix/push/v1/notify"
     
     @UserPreference(key: UserDefaultsKeys.enableNotifications, defaultValue: true, storageType: .userDefaults(store))
     var enableNotifications
