@@ -24,7 +24,13 @@ struct ComposerToolbar: View {
     var body: some View {
         ZStack(alignment: .top) {
             VStack(spacing: 8) {
-                topBar
+                if context.composerFocused {
+                    // When keyboard is active, show the main content
+                    mainTopBarContent
+                } else {
+                    // Otherwise show the regular top bar
+                    topBar
+                }
                 
                 if context.composerFormattingEnabled {
                     if verticalSizeClass != .compact,
@@ -92,29 +98,40 @@ struct ComposerToolbar: View {
                 Spacer()
                 
                 // Voice message recording button with circle background
-                ZStack {
-                    Circle()
-                        .fill(Color.compound.bgSubtleSecondary)
-                        .frame(width: 60, height: 60)
-                    if !context.viewState.showSendButton {
-                        voiceMessageRecordingButton(mode: context.viewState.isVoiceMessageModeActivated ? .recording : .idle)
-                            .scaleEffect(1.2)
-                    } else {
-                        sendButton
+                if !context.composerFocused {
+                    ZStack {
+                        Circle()
+                            .fill(Color.compound.bgSubtleSecondary)
+                            .frame(width: 60, height: 60)
+                        if !context.viewState.showSendButton {
+                            voiceMessageRecordingButton(mode: context.viewState.isVoiceMessageModeActivated ? .recording : .idle)
+                                .scaleEffect(1.2)
+                        } else {
+                            sendButton
+                        }
                     }
                 }
                 
                 if !context.viewState.isVoiceMessageModeActivated {
-                    Spacer()
-                    // Keyboard button for text input
-                    
-                    KeyboardButton(context: context)
-                        .onChange(of: context.composerFocused) { _, newValue in
-                            if newValue, case .recordVoiceMessage = context.viewState.composerMode {
-                                // When the keyboard button triggers focus, cancel any voice recording
-                                context.send(viewAction: .voiceMessage(.deleteRecording))
+                    if !context.composerFocused {
+                        Spacer()
+                        // Keyboard button for text input
+                        KeyboardButton(context: context)
+                            .onChange(of: context.composerFocused) { _, newValue in
+                                if newValue {
+                                    // When the keyboard button triggers focus, cancel any voice recording
+                                    // and show the message composer by switching to default mode
+                                    if case .recordVoiceMessage = context.viewState.composerMode {
+                                        context.send(viewAction: .voiceMessage(.deleteRecording))
+                                    }
+                                }
                             }
-                        }
+                    } else {
+                        // When keyboard is focused, show the send button
+                        Spacer()
+                        sendButton
+                            .padding(.leading, 3)
+                    }
                 } else {
                     Spacer()
                     voiceMessageTrashButton
@@ -163,6 +180,31 @@ struct ComposerToolbar: View {
                     RoomAttachmentPicker(context: context)
                 }
                 messageComposer
+                
+                // Button to exit focus mode
+                Button(action: {
+                    // Exit focus mode
+                    context.composerFocused = false
+                    
+                    // Clear any existing text
+                    context.plainComposerText = NSAttributedString(string: "")
+                }) {
+                    ZStack {
+                        Circle()
+                            .fill(Color.compound.bgSubtleSecondary)
+                            .frame(width: 44, height: 44)
+                        
+                        CompoundIcon(\.arrowDown)
+                            .scaledToFit()
+                            .scaledFrame(size: 24, relativeTo: .title)
+                    }
+                }
+                .accessibilityLabel("Exit keyboard")
+                .accessibilityIdentifier("ExitKeyboardButton")
+                .padding(.horizontal, 8)
+                
+                sendButton
+                    .padding(.leading, 3)
             }
             .opacity(context.viewState.isVoiceMessageModeActivated ? 0 : 1)
             

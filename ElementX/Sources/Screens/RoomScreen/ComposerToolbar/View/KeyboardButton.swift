@@ -24,7 +24,7 @@ struct KeyboardButton: View {
                 context.send(viewAction: .cancelEdit)
             }
             
-            // Deactivate voice message mode
+            // Switch to default text input mode
             if case .recordVoiceMessage = context.viewState.composerMode {
                 // This will switch from voice message mode to text input mode
                 context.send(viewAction: .voiceMessage(.deleteRecording))
