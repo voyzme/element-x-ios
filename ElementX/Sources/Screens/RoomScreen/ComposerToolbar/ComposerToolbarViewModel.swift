@@ -135,12 +135,18 @@ final class ComposerToolbarViewModel: ComposerToolbarViewModelType, ComposerTool
             case .previewVoiceMessage:
                 actionsSubject.send(.voiceMessage(.send))
             default:
+                // Determine if the message is in a thread or is a reply
+                let isThread = false // Default value, update if you have thread functionality
+                let isReply = state.composerMode.replyEventID != nil
+                
                 if context.composerFormattingEnabled {
+                    analyticsService.trackTextMessage(inThread: isThread, isReply: isReply)
                     actionsSubject.send(.sendMessage(plain: wysiwygViewModel.content.markdown,
                                                      html: wysiwygViewModel.content.html,
                                                      mode: state.composerMode,
                                                      intentionalMentions: wysiwygViewModel.getMentionsState().toIntentionalMentions()))
                 } else {
+                    analyticsService.trackTextMessage(inThread: isThread, isReply: isReply)
                     sendPlainComposerText()
                 }
             }

@@ -362,11 +362,15 @@ class TimelineInteractionHandler {
             return
         }
         
-        analyticsService.trackComposer(inThread: false,
-                                       isEditing: false,
-                                       isReply: false,
-                                       messageType: .VoiceMessage,
-                                       startsThread: nil)
+        // Determine if the message is in a thread or is a reply
+        let isThread = false // Default value, update if you have thread functionality
+        let isReply = false
+        
+        // Get the duration from the audio player state
+        let durationSeconds = audioPlayerState.duration
+        
+        // Track voice message analytics using our custom event
+        analyticsService.trackVoiceMessage(inThread: isThread, isReply: isReply, durationSeconds: durationSeconds)
 
         actionsSubject.send(.composer(action: .setMode(mode: .previewVoiceMessage(state: audioPlayerState, waveform: .url(recordingURL), isUploading: true))))
         await voiceMessageRecorder.stopPlayback()

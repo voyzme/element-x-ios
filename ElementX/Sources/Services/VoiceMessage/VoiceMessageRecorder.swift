@@ -11,6 +11,7 @@ import DSWaveformImage
 import Foundation
 import MatrixRustSDK
 import Speech
+import SwiftUI
 
 // Proper callback implementation for UniFFI
 class TranscriptCallbackImpl: TranscriptUpdateCallback {
@@ -582,7 +583,6 @@ class VoiceMessageRecorder: VoiceMessageRecorderProtocol {
         guard case .success(let waveform) = await buildRecordingWaveform() else {
             return .failure(.failedSendingVoiceMessage)
         }
-        
         let result = await roomProxy.timeline.sendVoiceMessage(url: oggFile,
                                                                audioInfo: audioInfo,
                                                                waveform: waveform,

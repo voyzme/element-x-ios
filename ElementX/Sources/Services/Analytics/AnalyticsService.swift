@@ -161,6 +161,26 @@ extension AnalyticsService {
                                                messageType: messageType,
                                                startsThread: startsThread))
     }
+
+    func trackVoiceMessage(inThread: Bool = false,
+                           isReply: Bool = false,
+                           durationSeconds: Double? = nil,
+                           startsThread: Bool? = nil) {
+        capture(event: AnalyticsEvent.VoiceMessage(inThread: inThread,
+                                                   isReply: isReply,
+                                                   durationSeconds: durationSeconds,
+                                                   startsThread: startsThread))
+    }
+
+    func trackTextMessage(inThread: Bool = false,
+                          isEditing: Bool = false,
+                          isReply: Bool = false,
+                          startsThread: Bool? = nil) {
+        capture(event: AnalyticsEvent.TextMessage(inThread: inThread,
+                                                  isEditing: isEditing,
+                                                  isReply: isReply,
+                                                  startsThread: startsThread))
+    }
     
     /// Track the presentation of a room
     /// - Parameters:
