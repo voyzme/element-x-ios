@@ -63,23 +63,78 @@ struct ComposerToolbar: View {
     }
     
     private var topBar: some View {
-        topBarLayout {
-            mainTopBarContent
+        VStack(spacing: 8) {
+            // Show recording view above the toolbar when recording is active
+            switch context.viewState.composerMode {
+            case .recordVoiceMessage(let state):
+                topBarLayout {
+                    VoiceMessageRecordingComposer(recorderState: state)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(RoundedRectangle(cornerRadius: 12).fill(Color.compound.bgSubtleSecondary))
+                        .padding(.horizontal, 8)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            case .previewVoiceMessage(let state, let waveform, let isUploading):
+                topBarLayout {
+                    voiceMessagePreviewComposer(audioPlayerState: state, waveform: waveform)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .disabled(isUploading)
+            default:
+                EmptyView()
+            }
             
-            if !context.composerFormattingEnabled {
-                if context.viewState.isUploading {
-                    ProgressView()
-                        .scaledFrame(size: 44, relativeTo: .title)
-                        .padding(.leading, 3)
-                } else if context.viewState.showSendButton {
-                    sendButton
-                        .padding(.leading, 3)
+            // Main toolbar controls
+            topBarLayout {
+                // Left side - Attachment picker
+                RoomAttachmentPicker(context: context)
+                Spacer()
+                
+                // Voice message recording button with circle background
+                ZStack {
+                    Circle()
+                        .fill(Color.compound.bgSubtleSecondary)
+                        .frame(width: 60, height: 60)
+                    if !context.viewState.showSendButton {
+                        voiceMessageRecordingButton(mode: context.viewState.isVoiceMessageModeActivated ? .recording : .idle)
+                            .scaleEffect(1.2)
+                    } else {
+                        sendButton
+                    }
+                }
+                
+                if !context.viewState.isVoiceMessageModeActivated {
+                    Spacer()
+                    // Keyboard button for text input
+                    
+                    KeyboardButton(context: context)
+                        .onChange(of: context.composerFocused) { _, newValue in
+                            if newValue, case .recordVoiceMessage = context.viewState.composerMode {
+                                // When the keyboard button triggers focus, cancel any voice recording
+                                context.send(viewAction: .voiceMessage(.deleteRecording))
+                            }
+                        }
                 } else {
-                    voiceMessageRecordingButton(mode: context.viewState.isVoiceMessageModeActivated ? .recording : .idle)
-                        .padding(.leading, 3)
+                    Spacer()
+                    voiceMessageTrashButton
+                }
+            
+                // Right side - Send button or upload progress
+                if !context.composerFormattingEnabled {
+                    if context.viewState.isUploading {
+                        ProgressView()
+                            .scaledFrame(size: 44, relativeTo: .title)
+                            .padding(.leading, 3)
+                    } // else if context.viewState.showSendButton {
+                    //    Spacer()
+                    //    sendButton
+                    //    .padding(.leading, 3)
+                    // }
                 }
             }
         }
+        .padding(.horizontal, 30)
         .animation(.linear(duration: 0.15), value: context.viewState.composerMode)
     }
     
@@ -152,6 +207,7 @@ struct ComposerToolbar: View {
         .animation(.linear(duration: 0.1).disabledDuringTests(), value: context.viewState.sendButtonDisabled)
         .keyboardShortcut(.return, modifiers: [.command])
         .accessibilityIdentifier(A11yIdentifiers.roomScreen.sendButton)
+        .scaleEffect(1.2)
     }
     
     private var messageComposer: some View {
