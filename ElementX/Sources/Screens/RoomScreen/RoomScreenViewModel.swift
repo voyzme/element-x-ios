@@ -211,12 +211,35 @@ class RoomScreenViewModel: RoomScreenViewModelType, RoomScreenViewModelProtocol 
     private func buildPinnedEventContents(timelineItems: [TimelineItemProxy]) {
         var pinnedEventContents = OrderedDictionary<String, AttributedString>()
         
+        // Get the actual pinned event IDs from the room info
+        let actualPinnedEventIDs = roomProxy.infoPublisher.value.pinnedEventIDs
+        
+        // Debug logging
+        MXLog.debug("Room \(roomProxy.id) has \(actualPinnedEventIDs.count) pinned event IDs: \(actualPinnedEventIDs)")
+        MXLog.debug("Timeline has \(timelineItems.count) items")
+        
         for item in timelineItems {
             // Only remote events are pinned
             if case let .event(event) = item,
                let eventID = event.id.eventID {
-                pinnedEventContents.updateValue(pinnedEventStringBuilder.buildAttributedString(for: event) ?? AttributedString(L10n.commonUnsupportedEvent),
-                                                forKey: eventID)
+                // Check if this event is actually pinned
+                let isPinned = actualPinnedEventIDs.contains(eventID)
+                
+                // Check if this is an STT event
+                var isSTTEvent = false
+                if let originalJSON = event.debugInfo.originalJSON {
+                    isSTTEvent = originalJSON.contains("\"type\":\"m.voyzme.raw_stt\"") ||
+                        originalJSON.contains("\"type\":\"m.voyzme.refined_stt\"")
+                }
+                
+                // Log event details
+                MXLog.debug("Event ID: \(eventID), isPinned: \(isPinned), isSTTEvent: \(isSTTEvent)")
+                
+                // Only include events that are actually pinned and not STT events
+                if isPinned, !isSTTEvent {
+                    pinnedEventContents.updateValue(pinnedEventStringBuilder.buildAttributedString(for: event) ?? AttributedString(L10n.commonUnsupportedEvent),
+                                                    forKey: eventID)
+                }
             }
         }
         

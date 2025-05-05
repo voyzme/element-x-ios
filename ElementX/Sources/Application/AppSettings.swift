@@ -243,7 +243,7 @@ final class AppSettings {
 
     // MARK: - Element Call
     
-    let elementCallBaseURL: URL = "https://call.voicedropdev.com"
+    let elementCallBaseURL: URL = "https://call.element.io"
     
     @UserPreference(key: UserDefaultsKeys.elementCallBaseURLOverride, defaultValue: nil, storageType: .userDefaults(store))
     var elementCallBaseURLOverride: URL?
