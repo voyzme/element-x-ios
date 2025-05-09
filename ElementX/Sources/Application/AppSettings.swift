@@ -105,31 +105,31 @@ final class AppSettings {
         
     /// The default homeserver address used. This is intentionally a string without a scheme
     /// so that it can be passed to Rust as a ServerName for well-known discovery.
-    private(set) var defaultHomeserverAddress = "matrix.org"
+    private(set) var defaultHomeserverAddress = "synapse.voicedropdev.com"
     
     /// The task identifier used for background app refresh. Also used in main target's the Info.plist
     let backgroundAppRefreshTaskIdentifier = "io.element.elementx.background.refresh"
 
     /// A URL where users can go read more about the app.
-    let websiteURL: URL = "https://element.io"
+    let websiteURL: URL = "https://voicedropdev.com"
     /// A URL that contains the app's logo that may be used when showing content in a web view.
-    let logoURL: URL = "https://element.io/mobile-icon.png"
+    let logoURL: URL = "https://voicedropdev.com/mobile-icon.png"
     /// A URL that contains that app's copyright notice.
-    let copyrightURL: URL = "https://element.io/copyright"
+    let copyrightURL: URL = "https://voicedropdev.com/copyright"
     /// A URL that contains the app's Terms of use.
-    let acceptableUseURL: URL = "https://element.io/acceptable-use-policy-terms"
+    let acceptableUseURL: URL = "https://voicedropdev.com/acceptable-use-policy-terms"
     /// A URL that contains the app's Privacy Policy.
-    let privacyURL: URL = "https://element.io/privacy"
+    let privacyURL: URL = "https://voicedropdev.com/privacy"
     /// An email address that should be used for support requests.
-    let supportEmailAddress = "support@element.io"
+    let supportEmailAddress = "support@voicedropdev.com"
     /// A URL where users can go read more about encryption in general.
-    let encryptionURL: URL = "https://element.io/help#encryption"
+    let encryptionURL: URL = "https://voicedropdev.com/help#encryption"
     /// A URL where users can go read more about the chat backup.
-    let chatBackupDetailsURL: URL = "https://element.io/help#encryption5"
+    let chatBackupDetailsURL: URL = "https://voicedropdev.com/help#encryption5"
     /// A URL where users can go read more about identity pinning violations
-    let identityPinningViolationDetailsURL: URL = "https://element.io/help#encryption18"
+    let identityPinningViolationDetailsURL: URL = "https://voicedropdev.com/help#encryption18"
     /// Any domains that Element web may be hosted on - used for handling links.
-    let elementWebHosts = ["app.element.io", "staging.element.io", "develop.element.io"]
+    let elementWebHosts = ["web.voicedropdev.com"]
     
     @UserPreference(key: UserDefaultsKeys.appAppearance, defaultValue: .system, storageType: .userDefaults(store))
     var appAppearance: AppAppearance
@@ -154,7 +154,7 @@ final class AppSettings {
     /// Any pre-defined static client registrations for OIDC issuers.
     let oidcStaticRegistrations: [URL: String] = ["https://id.thirdroom.io/realms/thirdroom": "elementx"]
     /// The redirect URL used for OIDC. This no longer uses universal links so we don't need the bundle ID to avoid conflicts between Element X, Nightly and PR builds.
-    let oidcRedirectURL: URL = "https://element.io/oidc/login"
+    let oidcRedirectURL: URL = "https://voicedropdev.com/oidc/login"
     
     private(set) lazy var oidcConfiguration = OIDCConfigurationProxy(clientName: InfoPlistReader.main.bundleDisplayName,
                                                                      redirectURI: oidcRedirectURL,
@@ -173,13 +173,13 @@ final class AppSettings {
     
     var pusherAppId: String {
         #if DEBUG
-        InfoPlistReader.main.baseBundleIdentifier + ".ios.dev"
+        InfoPlistReader.main.baseBundleIdentifier
         #else
-        InfoPlistReader.main.baseBundleIdentifier + ".ios.prod"
+        InfoPlistReader.main.baseBundleIdentifier
         #endif
     }
     
-    let pushGatewayBaseURL: URL = "https://matrix.org/_matrix/push/v1/notify"
+    let pushGatewayBaseURL: URL = "http://sygnal:5000/_matrix/push/v1/notify"
     
     @UserPreference(key: UserDefaultsKeys.enableNotifications, defaultValue: true, storageType: .userDefaults(store))
     var enableNotifications
@@ -205,17 +205,17 @@ final class AppSettings {
     #if DEBUG
     /// The configuration to use for analytics during development. Set `isEnabled` to false to disable analytics in debug builds.
     /// **Note:** Analytics are disabled by default for forks. If you are maintaining a fork, set custom configurations.
-    let analyticsConfiguration = AnalyticsConfiguration(isEnabled: InfoPlistReader.main.bundleIdentifier.starts(with: "io.element."),
-                                                        host: "https://posthog.element.dev",
-                                                        apiKey: "phc_VtA1L35nw3aeAtHIx1ayrGdzGkss7k1xINeXcoIQzXN",
-                                                        termsURL: "https://element.io/cookie-policy")
+    let analyticsConfiguration = AnalyticsConfiguration(isEnabled: true,
+                                                        host: "https://eu.i.posthog.com",
+                                                        apiKey: "phc_7XxSyA6hZRAhbcgd7OGiFIjhmd3YLjN6U0NaGnqrPSQ",
+                                                        termsURL: "https://voicedrop.dev/cookie-policy")
     #else
     /// The configuration to use for analytics. Set `isEnabled` to false to disable analytics.
     /// **Note:** Analytics are disabled by default for forks. If you are maintaining a fork, set custom configurations.
-    let analyticsConfiguration = AnalyticsConfiguration(isEnabled: InfoPlistReader.main.bundleIdentifier.starts(with: "io.element."),
-                                                        host: "https://posthog.element.io",
-                                                        apiKey: "phc_Jzsm6DTm6V2705zeU5dcNvQDlonOR68XvX2sh1sEOHO",
-                                                        termsURL: URL("https://element.io/cookie-policy"))
+    let analyticsConfiguration = AnalyticsConfiguration(isEnabled: true,
+                                                        host: "https://eu.i.posthog.com",
+                                                        apiKey: "phc_7XxSyA6hZRAhbcgd7OGiFIjhmd3YLjN6U0NaGnqrPSQ",
+                                                        termsURL: URL("https://voicedrop.dev/cookie-policy"))
     #endif
         
     /// Whether the user has opted in to send analytics.

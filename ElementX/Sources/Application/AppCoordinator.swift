@@ -363,6 +363,8 @@ class AppCoordinator: AppCoordinatorProtocol, AuthenticationFlowCoordinatorDeleg
         posthogAnalyticsClient.updateSuperProperties(AnalyticsEvent.SuperProperties(appPlatform: .EXI, cryptoSDK: .Rust, cryptoSDKVersion: sdkGitSha()))
         ServiceLocator.shared.register(analytics: AnalyticsService(client: posthogAnalyticsClient,
                                                                    appSettings: appSettings))
+        // Register the refined STT manager for voice message transcriptions
+        ServiceLocator.shared.register(refinedSTTManager: AppCoordinator.createRefinedSTTManager())
     }
     
     /// Perform any required migrations for the app to function correctly.
@@ -861,6 +863,32 @@ class AppCoordinator: AppCoordinatorProtocol, AuthenticationFlowCoordinatorDeleg
         }
         userSession?.clientProxy.stopSync()
         clientProxyObserver = nil
+    }
+    
+    /// Create a RefinedSTTManager instance that conforms to RefinedSTTManagerProtocol
+    private static func createRefinedSTTManager() -> RefinedSTTManagerProtocol {
+        // Simple implementation of RefinedSTTManagerProtocol
+        class RefinedSTTManager: RefinedSTTManagerProtocol {
+            private var refinedSTTDataDict: [String: RefinedSTTData] = [:]
+            private let refinedSTTDataSubject = CurrentValueSubject<[String: RefinedSTTData], Never>([:])
+            
+            var refinedSTTDataPublisher: AnyPublisher<[String: RefinedSTTData], Never> {
+                refinedSTTDataSubject.eraseToAnyPublisher()
+            }
+            
+            func addRefinedSTTData(_ refinedSTTData: RefinedSTTData) {
+                // Store the refined STT data with the referencedEventId as the key
+                refinedSTTDataDict[refinedSTTData.referencedEventId] = refinedSTTData
+                // Send the updated refined STT data to subscribers
+                refinedSTTDataSubject.send(refinedSTTDataDict)
+            }
+            
+            func getRefinedSTTData(forAudioEventId eventId: String) -> RefinedSTTData? {
+                refinedSTTDataDict[eventId]
+            }
+        }
+        
+        return RefinedSTTManager()
     }
 
     private func startSync() {

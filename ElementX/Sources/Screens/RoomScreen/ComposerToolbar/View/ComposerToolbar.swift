@@ -22,17 +22,25 @@ struct ComposerToolbar: View {
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     
     var body: some View {
-        VStack(spacing: 8) {
-            topBar
-            
-            if context.composerFormattingEnabled {
-                if verticalSizeClass != .compact,
-                   context.composerExpanded {
-                    suggestionView
-                        .padding(.leading, -5)
-                        .padding(.trailing, -8)
+        ZStack(alignment: .top) {
+            VStack(spacing: 8) {
+                if context.composerFocused {
+                    // When keyboard is active, show the main content
+                    mainTopBarContent
+                } else {
+                    // Otherwise show the regular top bar
+                    topBar
                 }
-                bottomBar
+                
+                if context.composerFormattingEnabled {
+                    if verticalSizeClass != .compact,
+                       context.composerExpanded {
+                        suggestionView
+                            .padding(.leading, -5)
+                            .padding(.trailing, -8)
+                    }
+                    bottomBar
+                }
             }
         }
         .padding(.leading, 5)
@@ -42,6 +50,11 @@ struct ComposerToolbar: View {
             if verticalSizeClass != .compact, !context.composerExpanded {
                 suggestionView
                     .offset(y: -frame.height)
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("VoiceMessageTranscriptUpdate"))) { notification in
+            if let transcript = notification.object as? String {
+                context.send(viewAction: .updateTranscript(transcript: transcript))
             }
         }
         .alert(item: $context.alertInfo)
@@ -56,23 +69,89 @@ struct ComposerToolbar: View {
     }
     
     private var topBar: some View {
-        topBarLayout {
-            mainTopBarContent
+        VStack(spacing: 8) {
+            // Show recording view above the toolbar when recording is active
+            switch context.viewState.composerMode {
+            case .recordVoiceMessage(let state):
+                topBarLayout {
+                    VoiceMessageRecordingComposer(recorderState: state)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(RoundedRectangle(cornerRadius: 12).fill(Color.compound.bgSubtleSecondary))
+                        .padding(.horizontal, 8)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            case .previewVoiceMessage(let state, let waveform, let isUploading):
+                topBarLayout {
+                    voiceMessagePreviewComposer(audioPlayerState: state, waveform: waveform)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .disabled(isUploading)
+            default:
+                EmptyView()
+            }
             
-            if !context.composerFormattingEnabled {
-                if context.viewState.isUploading {
-                    ProgressView()
-                        .scaledFrame(size: 44, relativeTo: .title)
-                        .padding(.leading, 3)
-                } else if context.viewState.showSendButton {
-                    sendButton
-                        .padding(.leading, 3)
+            // Main toolbar controls
+            topBarLayout {
+                // Left side - Attachment picker
+                RoomAttachmentPicker(context: context)
+                Spacer()
+                
+                // Voice message recording button with circle background
+                if !context.composerFocused {
+                    ZStack {
+                        Circle()
+                            .fill(Color.compound.bgSubtleSecondary)
+                            .frame(width: 60, height: 60)
+                        if !context.viewState.showSendButton {
+                            voiceMessageRecordingButton(mode: context.viewState.isVoiceMessageModeActivated ? .recording : .idle)
+                                .scaleEffect(1.2)
+                        } else {
+                            sendButton
+                        }
+                    }
+                }
+                
+                if !context.viewState.isVoiceMessageModeActivated {
+                    if !context.composerFocused {
+                        Spacer()
+                        // Keyboard button for text input
+                        KeyboardButton(context: context)
+                            .onChange(of: context.composerFocused) { _, newValue in
+                                if newValue {
+                                    // When the keyboard button triggers focus, cancel any voice recording
+                                    // and show the message composer by switching to default mode
+                                    if case .recordVoiceMessage = context.viewState.composerMode {
+                                        context.send(viewAction: .voiceMessage(.deleteRecording))
+                                    }
+                                }
+                            }
+                    } else {
+                        // When keyboard is focused, show the send button
+                        Spacer()
+                        sendButton
+                            .padding(.leading, 3)
+                    }
                 } else {
-                    voiceMessageRecordingButton(mode: context.viewState.isVoiceMessageModeActivated ? .recording : .idle)
-                        .padding(.leading, 3)
+                    Spacer()
+                    voiceMessageTrashButton
+                }
+            
+                // Right side - Send button or upload progress
+                if !context.composerFormattingEnabled {
+                    if context.viewState.isUploading {
+                        ProgressView()
+                            .scaledFrame(size: 44, relativeTo: .title)
+                            .padding(.leading, 3)
+                    } // else if context.viewState.showSendButton {
+                    //    Spacer()
+                    //    sendButton
+                    //    .padding(.leading, 3)
+                    // }
                 }
             }
         }
+        .padding(.horizontal, 30)
         .animation(.linear(duration: 0.15), value: context.viewState.composerMode)
     }
     
@@ -101,6 +180,31 @@ struct ComposerToolbar: View {
                     RoomAttachmentPicker(context: context)
                 }
                 messageComposer
+                
+                // Button to exit focus mode
+                Button(action: {
+                    // Exit focus mode
+                    context.composerFocused = false
+                    
+                    // Clear any existing text
+                    context.plainComposerText = NSAttributedString(string: "")
+                }) {
+                    ZStack {
+                        Circle()
+                            .fill(Color.compound.bgSubtleSecondary)
+                            .frame(width: 44, height: 44)
+                        
+                        CompoundIcon(\.arrowDown)
+                            .scaledToFit()
+                            .scaledFrame(size: 24, relativeTo: .title)
+                    }
+                }
+                .accessibilityLabel("Exit keyboard")
+                .accessibilityIdentifier("ExitKeyboardButton")
+                .padding(.horizontal, 8)
+                
+                sendButton
+                    .padding(.leading, 3)
             }
             .opacity(context.viewState.isVoiceMessageModeActivated ? 0 : 1)
             
@@ -145,6 +249,7 @@ struct ComposerToolbar: View {
         .animation(.linear(duration: 0.1).disabledDuringTests(), value: context.viewState.sendButtonDisabled)
         .keyboardShortcut(.return, modifiers: [.command])
         .accessibilityIdentifier(A11yIdentifiers.roomScreen.sendButton)
+        .scaleEffect(1.2)
     }
     
     private var messageComposer: some View {
@@ -205,6 +310,9 @@ struct ComposerToolbar: View {
         // sending e.g. accepting current autocorrection.
         // Fixes https://github.com/element-hq/element-x-ios/issues/3216
         context.presendCallback?()
+        
+        // Clear transcript when sending the message
+        context.send(viewAction: .updateTranscript(transcript: ""))
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             context.send(viewAction: .sendMessage)

@@ -8,11 +8,19 @@
 import Foundation
 import SwiftUI
 
+// Import necessary frameworks
+import Foundation
+import SwiftUI
+
 struct VoiceMessageRoomTimelineView: View {
     @EnvironmentObject private var context: TimelineViewModel.Context
-    private let timelineItem: VoiceMessageRoomTimelineItem
+    @ObservedObject private var timelineItem: VoiceMessageRoomTimelineItem
     private let playerState: AudioPlayerState
     @State private var resumePlaybackAfterScrubbing = false
+    
+    // States for toggling between different views
+    @State private var showTranscription = false
+    @State private var showTopicsModal = false
     
     init(timelineItem: VoiceMessageRoomTimelineItem, playerState: AudioPlayerState) {
         self.timelineItem = timelineItem
@@ -21,12 +29,103 @@ struct VoiceMessageRoomTimelineView: View {
     
     var body: some View {
         TimelineStyler(timelineItem: timelineItem) {
-            VoiceMessageRoomPlaybackView(playerState: playerState,
-                                         onPlayPause: onPlaybackPlayPause,
-                                         onSeek: { onPlaybackSeek($0) },
-                                         onScrubbing: { onPlaybackScrubbing($0) })
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: 400)
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(alignment: .center, spacing: 8) {
+                    VoiceMessageRoomPlaybackView(playerState: playerState,
+                                                 onPlayPause: onPlaybackPlayPause,
+                                                 onSeek: { onPlaybackSeek($0) },
+                                                 onScrubbing: { onPlaybackScrubbing($0) })
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: 400)
+                    
+                    // Only show buttons if we have parsed data from the refined STT
+                    if let refinedSTTData = timelineItem.content.refinedSTTData,
+                       refinedSTTData.summary != nil || refinedSTTData.refinedTranscription != nil || refinedSTTData.topics != nil {
+                        // Transcription toggle button
+                        Button(action: {
+                            withAnimation {
+                                showTranscription.toggle()
+                            }
+                        }) {
+                            Text("T")
+                                .font(.system(size: 16, weight: .bold, design: .default))
+                                .foregroundColor(showTranscription ? .white : .primary)
+                                .frame(width: 25, height: 25)
+                                .background(showTranscription ? Color.blue : Color.compound.bgSubtlePrimary)
+                                .cornerRadius(8)
+                        }
+                        
+                        // Summary/topics button
+                        Button(action: {
+                            showTopicsModal = true
+                        }) {
+                            Text("S")
+                                .font(.system(size: 16, weight: .bold, design: .default))
+                                .foregroundColor(.primary)
+                                .frame(width: 25, height: 25)
+                                .background(Color.compound.bgSubtlePrimary)
+                                .cornerRadius(8)
+                        }
+                    }
+                }
+                
+                // Display refined STT content if available
+                if let refinedSTTData = timelineItem.content.refinedSTTData {
+                    Group {
+                        if let summary = refinedSTTData.summary, let refinedTranscription = refinedSTTData.refinedTranscription {
+                            // Display either summary or refined transcription based on toggle state
+                            ScrollView {
+                                Text(showTranscription ? refinedTranscription : summary)
+                                    .font(.compound.bodyMD)
+                                    .foregroundColor(.compound.textPrimary)
+                                    .padding(8)
+                            }
+                            .frame(maxHeight: 150) // Set maximum height for the scroll view
+                            .background(Color.compound.bgSubtleSecondary)
+                            .cornerRadius(8)
+                            .transition(.opacity)
+                        } else if let summary = refinedSTTData.summary {
+                            // Only summary available
+                            ScrollView {
+                                Text(summary)
+                                    .font(.compound.bodyMD)
+                                    .foregroundColor(.compound.textPrimary)
+                                    .padding(8)
+                            }
+                            .frame(maxHeight: 150) // Set maximum height for the scroll view
+                            .background(Color.compound.bgSubtleSecondary)
+                            .cornerRadius(8)
+                        } else if let refinedTranscription = refinedSTTData.refinedTranscription {
+                            // Only refined transcription available
+                            ScrollView {
+                                Text(refinedTranscription)
+                                    .font(.compound.bodyMD)
+                                    .foregroundColor(.compound.textPrimary)
+                                    .padding(8)
+                            }
+                            .frame(maxHeight: 150) // Set maximum height for the scroll view
+                            .background(Color.compound.bgSubtleSecondary)
+                            .cornerRadius(8)
+                        } else {
+                            // Fallback to displaying raw refined STT body
+                            ScrollView {
+                                Text(refinedSTTData.refinedSttBody)
+                                    .font(.compound.bodyMD)
+                                    .foregroundColor(.compound.textPrimary)
+                                    .padding(8)
+                            }
+                            .frame(maxHeight: 150) // Set maximum height for the scroll view
+                            .background(Color.compound.bgSubtleSecondary)
+                            .cornerRadius(8)
+                        }
+                    }
+                }
+            }
+            .sheet(isPresented: $showTopicsModal) {
+                if let refinedSTTData = timelineItem.content.refinedSTTData, let topics = refinedSTTData.topics {
+                    TopicsModalView(topics: topics, timelineItem: timelineItem, context: context)
+                }
+            }
         }
     }
     
@@ -44,11 +143,108 @@ struct VoiceMessageRoomTimelineView: View {
                 resumePlaybackAfterScrubbing = true
                 context.send(viewAction: .handleAudioPlayerAction(.playPause(itemID: timelineItem.id)))
             }
-        } else {
-            if resumePlaybackAfterScrubbing {
-                context.send(viewAction: .handleAudioPlayerAction(.playPause(itemID: timelineItem.id)))
-                resumePlaybackAfterScrubbing = false
+        } else if resumePlaybackAfterScrubbing {
+            resumePlaybackAfterScrubbing = false
+            context.send(viewAction: .handleAudioPlayerAction(.playPause(itemID: timelineItem.id)))
+        }
+    }
+}
+
+// Response button component to simplify the view hierarchy
+struct ResponseButton: View {
+    let response: String
+    let isSelected: Bool
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            HStack {
+                Text(response)
+                    .lineLimit(3)
+                
+                if isSelected {
+                    Spacer()
+                    Text("Selected!")
+                        .foregroundColor(.green)
+                        .font(.caption)
+                }
             }
+            .padding()
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.compound.bgSubtlePrimary)
+            .cornerRadius(8)
+        }
+    }
+}
+
+// Topic section component to further break down the view hierarchy
+struct TopicSection: View {
+    let topic: RefinedSTTData.Topic
+    let timelineItem: VoiceMessageRoomTimelineItem
+    let context: TimelineViewModel.Context
+    let selectedResponse: String?
+    let onResponseSelected: (String) -> Void
+    
+    var body: some View {
+        Section(header: Text(topic.topic).font(.headline)) {
+            ForEach(topic.responses, id: \.self) { response in
+                ResponseButton(response: response,
+                               isSelected: selectedResponse == response,
+                               action: {
+                                   // Create reply draft with the selected response
+                                   // Include the topic name in the reply text to make it clear what the voice message was about
+                                   let replyText = "Re: \(topic.topic) → \(response)"
+                        
+                                   // First start replying to the message
+                                   context.send(viewAction: .handleTimelineItemMenuAction(itemID: timelineItem.id,
+                                                                                          action: .reply(isThread: false)))
+                        
+                                   // Wait a moment for the reply to be set up, then set the text
+                                   DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                       // Set the draft text using notification
+                                       NotificationCenter.default.post(name: Notification.Name("ElementX.SetDraftText"),
+                                                                       object: nil,
+                                                                       userInfo: ["text": replyText])
+                                   }
+                        
+                                   // Notify parent about selection
+                                   onResponseSelected(response)
+                               })
+            }
+        }
+    }
+}
+
+// Modal view for displaying topics and responses
+struct TopicsModalView: View {
+    let topics: [RefinedSTTData.Topic]
+    let timelineItem: VoiceMessageRoomTimelineItem
+    let context: TimelineViewModel.Context
+    @State private var selectedResponse: String? = nil
+    @Environment(\.presentationMode) var presentationMode
+    
+    var body: some View {
+        NavigationView {
+            List {
+                ForEach(topics) { topic in
+                    TopicSection(topic: topic,
+                                 timelineItem: timelineItem,
+                                 context: context,
+                                 selectedResponse: selectedResponse,
+                                 onResponseSelected: { response in
+                                     // Show feedback
+                                     selectedResponse = response
+                            
+                                     // Dismiss the modal after a short delay
+                                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                                         presentationMode.wrappedValue.dismiss()
+                                     }
+                                 })
+                }
+            }
+            .listStyle(InsetGroupedListStyle())
+            .navigationTitle("Topics & Responses")
+            .navigationBarTitleDisplayMode(.inline)
         }
     }
 }

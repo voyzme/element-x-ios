@@ -135,12 +135,18 @@ final class ComposerToolbarViewModel: ComposerToolbarViewModelType, ComposerTool
             case .previewVoiceMessage:
                 actionsSubject.send(.voiceMessage(.send))
             default:
+                // Determine if the message is in a thread or is a reply
+                let isThread = false // Default value, update if you have thread functionality
+                let isReply = state.composerMode.replyEventID != nil
+                
                 if context.composerFormattingEnabled {
+                    analyticsService.trackTextMessage(inThread: isThread, isReply: isReply)
                     actionsSubject.send(.sendMessage(plain: wysiwygViewModel.content.markdown,
                                                      html: wysiwygViewModel.content.html,
                                                      mode: state.composerMode,
                                                      intentionalMentions: wysiwygViewModel.getMentionsState().toIntentionalMentions()))
                 } else {
+                    analyticsService.trackTextMessage(inThread: isThread, isReply: isReply)
                     sendPlainComposerText()
                 }
             }
@@ -178,6 +184,9 @@ final class ComposerToolbarViewModel: ComposerToolbarViewModelType, ComposerTool
             processVoiceMessageAction(voiceMessageAction)
         case .plainComposerTextChanged:
             completionSuggestionService.processTextMessage(state.bindings.plainComposerText.string)
+        case .updateTranscript(let transcript):
+            state.currentTranscript = transcript
+            state.showTranscript = !transcript.isEmpty
         case .didToggleFormattingOptions:
             if context.composerFormattingEnabled {
                 guard !context.plainComposerText.string.isEmpty else {
@@ -404,8 +413,14 @@ final class ComposerToolbarViewModel: ComposerToolbarViewModelType, ComposerTool
             actionsSubject.send(.voiceMessage(.stopRecording))
         case .cancelRecording:
             actionsSubject.send(.voiceMessage(.cancelRecording))
+            // Clear transcript when recording is cancelled
+            state.currentTranscript = ""
+            state.showTranscript = false
         case .deleteRecording:
             actionsSubject.send(.voiceMessage(.deleteRecording))
+            // Clear transcript when voice message is deleted
+            state.currentTranscript = ""
+            state.showTranscript = false
         case .startPlayback:
             actionsSubject.send(.voiceMessage(.startPlayback))
         case .pausePlayback:
