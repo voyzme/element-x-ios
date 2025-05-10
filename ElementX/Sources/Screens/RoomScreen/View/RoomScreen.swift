@@ -90,15 +90,17 @@ struct RoomScreen: View {
                     }
                     
                     // Transcript popup that persists across different composer modes
-                    ZStack {
-                        if composerToolbarContext.viewState.showTranscript, !composerToolbarContext.viewState.currentTranscript.isEmpty {
-                            TranscriptPopupView(transcript: composerToolbarContext.viewState.currentTranscript)
-                                .transition(.move(edge: .top).combined(with: .opacity))
-                                .zIndex(1) // Ensure it appears above everything
-                                .padding(.bottom, 8) // Add space between popup and toolbar
-                        }
-                    }
-                    .animation(.easeInOut(duration: 0.2), value: composerToolbarContext.viewState.showTranscript && !composerToolbarContext.viewState.currentTranscript.isEmpty)
+                    /*
+                     ZStack {
+                         if composerToolbarContext.viewState.showTranscript, !composerToolbarContext.viewState.currentTranscript.isEmpty {
+                             TranscriptPopupView(transcript: composerToolbarContext.viewState.currentTranscript)
+                                 .transition(.move(edge: .top).combined(with: .opacity))
+                                 .zIndex(1) // Ensure it appears above everything
+                                 .padding(.bottom, 8) // Add space between popup and toolbar
+                         }
+                     }
+                     .animation(.easeInOut(duration: 0.2), value: composerToolbarContext.viewState.showTranscript && !composerToolbarContext.viewState.currentTranscript.isEmpty)
+                     */
                     
                     composerToolbar
                         .padding(.bottom, composerToolbarContext.composerFormattingEnabled ? 8 : 12)
