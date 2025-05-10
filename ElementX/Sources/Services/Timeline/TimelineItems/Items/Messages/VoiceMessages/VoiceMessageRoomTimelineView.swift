@@ -119,6 +119,16 @@ struct VoiceMessageRoomTimelineView: View {
                             .cornerRadius(8)
                         }
                     }
+                } else {
+                    ScrollView {
+                        Text("Processing voice message...")
+                            .font(.compound.bodyMD)
+                            .foregroundColor(.compound.textPrimary)
+                            .padding(8)
+                    }
+                    .frame(maxHeight: 150) // Set maximum height for the scroll view
+                    .background(Color.compound.bgSubtleSecondary)
+                    .cornerRadius(8)
                 }
             }
             .sheet(isPresented: $showTopicsModal) {
