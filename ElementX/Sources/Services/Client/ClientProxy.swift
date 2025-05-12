@@ -374,7 +374,7 @@ class ClientProxy: ClientProxyProtocol {
         do {
             let parameters = CreateRoomParameters(name: nil,
                                                   topic: nil,
-                                                  isEncrypted: true,
+                                                  isEncrypted: false,
                                                   isDirect: true,
                                                   visibility: .private,
                                                   preset: .trustedPrivateChat,
@@ -403,7 +403,7 @@ class ClientProxy: ClientProxyProtocol {
         do {
             let parameters = CreateRoomParameters(name: name,
                                                   topic: topic,
-                                                  isEncrypted: isRoomPrivate,
+                                                  isEncrypted: false,
                                                   isDirect: false,
                                                   visibility: isRoomPrivate ? .private : .public,
                                                   preset: isRoomPrivate ? .privateChat : .publicChat,
