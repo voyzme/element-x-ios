@@ -132,6 +132,55 @@ class HomeScreenViewModel: HomeScreenViewModelType, HomeScreenViewModelProtocol 
                 let result = await userSession.clientProxy.searchRooms(query: query, roomID: nil, language: "en")
                 completion(result)
             }
+        case .getRoomInfo(let roomId, let completion):
+            Task {
+                let roomSummary = roomSummaryProvider?.roomListPublisher.value.first { $0.id == roomId }
+                completion(roomSummary)
+            }
+        case .getMessageContent(let roomId, let eventId, let completion):
+            Task {
+                // Try to get the room to access basic information
+                guard case let .joined(roomProxy) = await userSession.clientProxy.roomForIdentifier(roomId) else {
+                    MXLog.error("Could not find room for ID: \(roomId)")
+                    completion(nil)
+                    return
+                }
+                
+                // Try to create a focused timeline for this specific event
+                // This is a more reliable way to get the event content
+                let focusedTimelineResult = await roomProxy.timelineFocusedOnEvent(eventID: eventId, numberOfEvents: 1)
+                
+                switch focusedTimelineResult {
+                case .success(let focusedTimeline):
+                    // Wait for the timeline to initialize
+                    await focusedTimeline.subscribeForUpdates()
+                    
+                    // Wait a moment for the timeline to load
+                    try? await Task.sleep(nanoseconds: 500_000_000) // 500ms
+                    
+                    // Try to find the event in the focused timeline
+                    if let provider = try? focusedTimeline.timelineProvider,
+                       let itemProxy = provider.itemProxies.first(where: { proxy in
+                           if case .event(let eventProxy) = proxy, eventProxy.id.eventID == eventId {
+                               return true
+                           }
+                           return false
+                       }) {
+                        // Found the event, return it
+                        completion(itemProxy)
+                        return
+                    }
+                    
+                    // If we couldn't find it, try a different approach
+                    // Log the failure and return nil
+                    MXLog.error("Could not find event \(eventId) in focused timeline")
+                    completion(nil)
+                    
+                case .failure(let error):
+                    MXLog.error("Failed to create focused timeline for event \(eventId): \(error)")
+                    completion(nil)
+                }
+            }
         case .selectRoom(let roomIdentifier):
             actionsSubject.send(.presentRoom(roomIdentifier: roomIdentifier))
         case .showRoomDetails(roomIdentifier: let roomIdentifier):

@@ -49,6 +49,8 @@ enum HomeScreenViewAction {
     case declineInvite(roomIdentifier: String)
     
     case searchMessages(query: String, completion: (Result<[String: Any], ClientProxyError>) -> Void)
+    case getRoomInfo(roomId: String, completion: (RoomSummary?) -> Void)
+    case getMessageContent(roomId: String, eventId: String, completion: (TimelineItemProxy?) -> Void)
 }
 
 enum HomeScreenRoomListMode: CustomStringConvertible {
