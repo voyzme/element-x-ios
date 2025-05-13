@@ -93,7 +93,7 @@
          <EnvironmentVariable
             key = "RUST_LOG"
             value = "trace"
-            isEnabled = "NO">
+            isEnabled = "YES">
          </EnvironmentVariable>
       </EnvironmentVariables>
    </LaunchAction>

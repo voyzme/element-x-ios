@@ -15,9 +15,38 @@ struct HomeScreenContent: View {
     @ObservedObject var context: HomeScreenViewModel.Context
     let scrollViewAdapter: ScrollViewAdapter
     
+    @State private var isSearchModalPresented = false
+    
     var body: some View {
-        roomList
-            .sentryTrace("\(Self.self)")
+        ZStack {
+            roomList
+            
+            VStack {
+                Spacer()
+                HStack {
+                    Spacer()
+                    Button {
+                        isSearchModalPresented = true
+                    } label: {
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundColor(.white)
+                            .frame(width: 56, height: 56)
+                            .background(Color.compound.iconAccentTertiary)
+                            .clipShape(Circle())
+                            .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
+                    }
+                    .padding(.trailing, 16)
+                    .padding(.bottom, 16)
+                }
+            }
+        }
+        .sheet(isPresented: $isSearchModalPresented) {
+            SearchModalView(context: context)
+                .presentationDragIndicator(.visible)
+                .presentationDetents([.medium, .large])
+        }
+        .sentryTrace("\(Self.self)")
     }
     
     private var roomList: some View {

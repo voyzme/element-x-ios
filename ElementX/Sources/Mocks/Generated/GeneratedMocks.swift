@@ -3017,6 +3017,76 @@ class ClientProxyMock: ClientProxyProtocol {
             return knockRoomAliasMessageReturnValue
         }
     }
+    //MARK: - searchRooms
+
+    var searchRoomsQueryRoomIDLanguageUnderlyingCallsCount = 0
+    var searchRoomsQueryRoomIDLanguageCallsCount: Int {
+        get {
+            if Thread.isMainThread {
+                return searchRoomsQueryRoomIDLanguageUnderlyingCallsCount
+            } else {
+                var returnValue: Int? = nil
+                DispatchQueue.main.sync {
+                    returnValue = searchRoomsQueryRoomIDLanguageUnderlyingCallsCount
+                }
+
+                return returnValue!
+            }
+        }
+        set {
+            if Thread.isMainThread {
+                searchRoomsQueryRoomIDLanguageUnderlyingCallsCount = newValue
+            } else {
+                DispatchQueue.main.sync {
+                    searchRoomsQueryRoomIDLanguageUnderlyingCallsCount = newValue
+                }
+            }
+        }
+    }
+    var searchRoomsQueryRoomIDLanguageCalled: Bool {
+        return searchRoomsQueryRoomIDLanguageCallsCount > 0
+    }
+    var searchRoomsQueryRoomIDLanguageReceivedArguments: (query: String, roomID: String?, language: String)?
+    var searchRoomsQueryRoomIDLanguageReceivedInvocations: [(query: String, roomID: String?, language: String)] = []
+
+    var searchRoomsQueryRoomIDLanguageUnderlyingReturnValue: Result<[String: Any], ClientProxyError>!
+    var searchRoomsQueryRoomIDLanguageReturnValue: Result<[String: Any], ClientProxyError>! {
+        get {
+            if Thread.isMainThread {
+                return searchRoomsQueryRoomIDLanguageUnderlyingReturnValue
+            } else {
+                var returnValue: Result<[String: Any], ClientProxyError>? = nil
+                DispatchQueue.main.sync {
+                    returnValue = searchRoomsQueryRoomIDLanguageUnderlyingReturnValue
+                }
+
+                return returnValue!
+            }
+        }
+        set {
+            if Thread.isMainThread {
+                searchRoomsQueryRoomIDLanguageUnderlyingReturnValue = newValue
+            } else {
+                DispatchQueue.main.sync {
+                    searchRoomsQueryRoomIDLanguageUnderlyingReturnValue = newValue
+                }
+            }
+        }
+    }
+    var searchRoomsQueryRoomIDLanguageClosure: ((String, String?, String) async -> Result<[String: Any], ClientProxyError>)?
+
+    func searchRooms(query: String, roomID: String?, language: String) async -> Result<[String: Any], ClientProxyError> {
+        searchRoomsQueryRoomIDLanguageCallsCount += 1
+        searchRoomsQueryRoomIDLanguageReceivedArguments = (query: query, roomID: roomID, language: language)
+        DispatchQueue.main.async {
+            self.searchRoomsQueryRoomIDLanguageReceivedInvocations.append((query: query, roomID: roomID, language: language))
+        }
+        if let searchRoomsQueryRoomIDLanguageClosure = searchRoomsQueryRoomIDLanguageClosure {
+            return await searchRoomsQueryRoomIDLanguageClosure(query, roomID, language)
+        } else {
+            return searchRoomsQueryRoomIDLanguageReturnValue
+        }
+    }
     //MARK: - uploadMedia
 
     var uploadMediaUnderlyingCallsCount = 0

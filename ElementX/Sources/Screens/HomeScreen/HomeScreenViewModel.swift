@@ -127,6 +127,11 @@ class HomeScreenViewModel: HomeScreenViewModelType, HomeScreenViewModelProtocol 
     
     override func process(viewAction: HomeScreenViewAction) {
         switch viewAction {
+        case .searchMessages(let query, let completion):
+            Task {
+                let result = await userSession.clientProxy.searchRooms(query: query, roomID: nil, language: "en")
+                completion(result)
+            }
         case .selectRoom(let roomIdentifier):
             actionsSubject.send(.presentRoom(roomIdentifier: roomIdentifier))
         case .showRoomDetails(roomIdentifier: let roomIdentifier):

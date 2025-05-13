@@ -612,6 +612,7 @@
 		8699530B434AACB0160C2EC8 /* SessionVerificationScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13AA110205A558495157F764 /* SessionVerificationScreen.swift */; };
 		86B5D513EFECC828F2A40CF7 /* ReportContentScreenCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD33248CF5E7C1D5D98D6B57 /* ReportContentScreenCoordinator.swift */; };
 		86BEF92AAD0BCE91DC9F94D2 /* InfoPlistReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85A54CE142B8CF88F18B12EA /* InfoPlistReader.swift */; };
+		870A9F362DD30EEF00908A35 /* SearchModalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 870A9F352DD30EEF00908A35 /* SearchModalView.swift */; };
 		87358F8E2DC5FC1000FA1357 /* KeyboardButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87358F8D2DC5FC1000FA1357 /* KeyboardButton.swift */; };
 		8778C61080BB5F4E801F5F04 /* RoomDirectorySearchScreenCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 717D5F3E0036179B487EEB2C /* RoomDirectorySearchScreenCoordinator.swift */; };
 		87B2F566229C8E1B284D82A5 /* UIConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9F0502BFA48E2BB1AF2307E /* UIConstants.swift */; };
@@ -1839,6 +1840,7 @@
 		86C547604EF91EEF371C71E6 /* OnboardingFlowCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingFlowCoordinator.swift; sourceTree = "<group>"; };
 		86C82C315F8C4EA68A6381D3 /* RedactedRoomTimelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RedactedRoomTimelineView.swift; sourceTree = "<group>"; };
 		86DBA5D6FE2D3748CA59B195 /* MessageForwardingScreenViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageForwardingScreenViewModel.swift; sourceTree = "<group>"; };
+		870A9F352DD30EEF00908A35 /* SearchModalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchModalView.swift; sourceTree = "<group>"; };
 		872C49517272FCFE6F7BE5C0 /* Analytics+SwiftUI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Analytics+SwiftUI.swift"; sourceTree = "<group>"; };
 		872FE658E570A08AE5652D13 /* SecureBackupKeyBackupScreenModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureBackupKeyBackupScreenModels.swift; sourceTree = "<group>"; };
 		87358F8D2DC5FC1000FA1357 /* KeyboardButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardButton.swift; sourceTree = "<group>"; };
@@ -5376,6 +5378,7 @@
 		E82C16BAECB2ADF50E9854DE /* View */ = {
 			isa = PBXGroup;
 			children = (
+				870A9F352DD30EEF00908A35 /* SearchModalView.swift */,
 				7ECB26265FA8C4566F02A953 /* BloomView.swift */,
 				8BFD64129EE94B5C773BE808 /* HomeScreen.swift */,
 				593D5C0391A43DE3E617D9AA /* HomeScreenContent.swift */,
@@ -7098,6 +7101,7 @@
 				523A341745B639CD3DC855C2 /* RoomSummaryProvider.swift in Sources */,
 				FC961D971631B05AF251C368 /* RoomSummaryProviderMock.swift in Sources */,
 				493740B345C0BEE4ED54D6F9 /* RoomSummaryProviderProtocol.swift in Sources */,
+				870A9F362DD30EEF00908A35 /* SearchModalView.swift in Sources */,
 				D310335AFE150A5C48784D9C /* RoomTimelineController.swift in Sources */,
 				BF3F4A989F00458C753637D7 /* RoomTimelineControllerFactory.swift in Sources */,
 				E0BF799FEB5B2A7AFC6830C2 /* RoomTimelineControllerFactoryMock.swift in Sources */,
