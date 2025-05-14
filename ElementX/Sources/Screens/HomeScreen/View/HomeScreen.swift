@@ -22,8 +22,16 @@ struct HomeScreen: View {
     @State private var navigationBarContainer: UIView?
     @State private var hairlineView: UIView?
     
+    // Reference to the view model
+    let viewModel: HomeScreenViewModelProtocol
+    
+    init(context: HomeScreenViewModel.Context, viewModel: HomeScreenViewModelProtocol) {
+        self.context = context
+        self.viewModel = viewModel
+    }
+    
     var body: some View {
-        HomeScreenContent(context: context, scrollViewAdapter: scrollViewAdapter)
+        HomeScreenContent(context: context, scrollViewAdapter: scrollViewAdapter, viewModel: viewModel)
             .alert(item: $context.alertInfo)
             .alert(item: $context.leaveRoomAlertItem,
                    actions: leaveRoomAlertActions,
@@ -194,18 +202,18 @@ struct HomeScreen_Previews: PreviewProvider, TestablePreview {
     
     static var previews: some View {
         NavigationStack {
-            HomeScreen(context: loadingViewModel.context)
+            HomeScreen(context: loadingViewModel.context, viewModel: loadingViewModel)
         }
         .previewDisplayName("Loading")
         
         NavigationStack {
-            HomeScreen(context: emptyViewModel.context)
+            HomeScreen(context: emptyViewModel.context, viewModel: emptyViewModel)
         }
         .previewDisplayName("Empty")
         .snapshotPreferences(delay: 4.0)
         
         NavigationStack {
-            HomeScreen(context: loadedViewModel.context)
+            HomeScreen(context: loadedViewModel.context, viewModel: loadedViewModel)
         }
         .previewDisplayName("Loaded")
         .snapshotPreferences(delay: 4.0)

@@ -14,6 +14,7 @@ struct HomeScreenContent: View {
     
     @ObservedObject var context: HomeScreenViewModel.Context
     let scrollViewAdapter: ScrollViewAdapter
+    let viewModel: HomeScreenViewModelProtocol
     
     @State private var isSearchModalPresented = false
     
@@ -42,11 +43,12 @@ struct HomeScreenContent: View {
             }
         }
         .sheet(isPresented: $isSearchModalPresented) {
-            SearchModalView(context: context)
+            SearchModalView(context: context, audioRecorderState: viewModel.audioRecorderState)
                 .presentationDragIndicator(.visible)
-                .presentationDetents([.medium, .large])
+                .presentationDetents([.large])
+                .presentationContentInteraction(.scrolls)
+                .edgesIgnoringSafeArea(.all)
         }
-        .sentryTrace("\(Self.self)")
     }
     
     private var roomList: some View {

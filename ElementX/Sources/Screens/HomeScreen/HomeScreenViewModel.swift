@@ -7,7 +7,11 @@
 
 import AnalyticsEvents
 import Combine
+import DSWaveformImage
+import DSWaveformImageViews
+import Foundation
 import MatrixRustSDK
+import Speech
 import SwiftUI
 
 typealias HomeScreenViewModelType = StateStoreViewModel<HomeScreenViewState, HomeScreenViewAction>
@@ -18,8 +22,12 @@ class HomeScreenViewModel: HomeScreenViewModelType, HomeScreenViewModelProtocol 
     private let appSettings: AppSettings
     private let userIndicatorController: UserIndicatorControllerProtocol
     
-    private let roomSummaryProvider: RoomSummaryProviderProtocol?
+    private var roomSummaryProvider: RoomSummaryProviderProtocol?
+    private var roomListService: RoomListServiceProtocol?
     
+    // Voice recording properties
+    private var voiceRecorder: VoiceMessageRecorderProtocol?
+    let audioRecorderState = VoiceSearchRecorderState()
     private var actionsSubject: PassthroughSubject<HomeScreenViewModelAction, Never> = .init()
     var actions: AnyPublisher<HomeScreenViewModelAction, Never> {
         actionsSubject.eraseToAnyPublisher()
@@ -127,7 +135,7 @@ class HomeScreenViewModel: HomeScreenViewModelType, HomeScreenViewModelProtocol 
     
     override func process(viewAction: HomeScreenViewAction) {
         switch viewAction {
-        case .searchMessages(let query, let completion):
+        case .searchGlobally(let query, let completion):
             Task {
                 let result = await userSession.clientProxy.searchRooms(query: query, roomID: nil, language: "en")
                 completion(result)
@@ -179,6 +187,69 @@ class HomeScreenViewModel: HomeScreenViewModelType, HomeScreenViewModelProtocol 
                 case .failure(let error):
                     MXLog.error("Failed to create focused timeline for event \(eventId): \(error)")
                     completion(nil)
+                }
+            }
+            
+        // MARK: - Voice Recording Actions
+            
+        case .startVoiceRecording:
+            Task {
+                // Start actual voice recording on the main actor
+                await MainActor.run {
+                    // Start actual voice recording
+                    audioRecorderState.startRecording()
+                    
+                    MXLog.info("Started voice recording for search, isRecording: \(audioRecorderState.isRecording)")
+                }
+            }
+            
+        case .stopVoiceRecording(let useTranscript):
+            Task {
+                // Safely get the transcript if needed before stopping
+                var capturedTranscript: String? = nil
+                if useTranscript {
+                    // Use a safe way to access the transcript
+                    capturedTranscript = audioRecorderState.safeGetTranscript()
+                    MXLog.info("Captured transcript before stopping: \(capturedTranscript ?? "nil")")
+                }
+                
+                await MainActor.run {
+                    // Stop the actual recording
+                    audioRecorderState.stopRecording()
+                    
+                    // If we're not using the transcript, clear it
+                    if !useTranscript {
+                        audioRecorderState.currentTranscript = nil
+                    } else if capturedTranscript == nil || capturedTranscript?.isEmpty == true {
+                        // If we want to use the transcript but it's nil or empty, provide a fallback
+                        audioRecorderState.currentTranscript = "voice search query"
+                    } else if let transcript = capturedTranscript {
+                        // Make sure we preserve the transcript we captured
+                        audioRecorderState.currentTranscript = transcript
+                    }
+                    
+                    MXLog.info("Stopped voice recording for search, useTranscript: \(useTranscript)")
+                }
+            }
+            
+        case .cancelVoiceRecording:
+            Task {
+                await MainActor.run {
+                    // Stop the actual recording and clear the transcript
+                    audioRecorderState.stopRecording()
+                    audioRecorderState.currentTranscript = nil
+                    
+                    MXLog.info("Cancelled voice recording for search")
+                }
+            }
+            
+        case .switchToKeyboard:
+            Task {
+                await MainActor.run {
+                    // Stop the actual recording
+                    audioRecorderState.stopRecording()
+                    
+                    MXLog.info("Switched to keyboard input for search")
                 }
             }
         case .selectRoom(let roomIdentifier):
@@ -513,6 +584,34 @@ class HomeScreenViewModel: HomeScreenViewModelType, HomeScreenViewModelProtocol 
         state.bindings.alertInfo = .init(id: UUID(),
                                          title: L10n.commonError,
                                          message: L10n.errorUnknown)
+    }
+}
+
+extension HomeScreenViewModel {
+    /// Simulates voice recording by updating the audio recorder state
+    private func startRecordingSimulation() {
+        // Start a timer to update the duration and waveform samples
+        Task {
+            var elapsedTime: TimeInterval = 0
+            
+            while audioRecorderState.isRecording {
+                // Update duration
+                audioRecorderState.duration = elapsedTime
+                
+                // Generate random waveform samples
+                let newSamples = (0..<10).map { _ in Float.random(in: 0.1...1.0) }
+                audioRecorderState.waveformSamples.append(contentsOf: newSamples)
+                
+                // Keep the waveform samples array at a reasonable size
+                if audioRecorderState.waveformSamples.count > 100 {
+                    audioRecorderState.waveformSamples.removeFirst(10)
+                }
+                
+                // Wait a bit before the next update
+                try? await Task.sleep(nanoseconds: 100_000_000) // 100ms
+                elapsedTime += 0.1
+            }
+        }
     }
 }
 
