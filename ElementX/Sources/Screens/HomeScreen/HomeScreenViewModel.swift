@@ -48,6 +48,15 @@ class HomeScreenViewModel: HomeScreenViewModelType, HomeScreenViewModelProtocol 
         super.init(initialViewState: .init(userID: userSession.clientProxy.userID),
                    mediaProvider: userSession.mediaProvider)
         
+        // Set up observer for search language changes
+        searchLanguageObserver = NotificationCenter.default.addObserver(forName: .searchLanguageDidChange,
+                                                                        object: nil,
+                                                                        queue: .main) { [weak self] _ in
+            // Language changed, but we don't need to do anything here
+            // The next search will automatically use the new language
+            MXLog.debug("Search language changed to: \(self?.appSettings.searchLanguage.displayName ?? "")")
+        }
+        
         userSession.clientProxy.userAvatarURLPublisher
             .receive(on: DispatchQueue.main)
             .weakAssign(to: \.state.userAvatarURL, on: self)
@@ -133,11 +142,16 @@ class HomeScreenViewModel: HomeScreenViewModelType, HomeScreenViewModelProtocol 
     
     // MARK: - Public
     
+    private var searchLanguageObserver: NSObjectProtocol?
+    
     override func process(viewAction: HomeScreenViewAction) {
         switch viewAction {
         case .searchGlobally(let query, let completion):
             Task {
-                let result = await userSession.clientProxy.searchRooms(query: query, roomID: nil, language: "en")
+                // Use the selected language from app settings
+                let language = appSettings.searchLanguage.rawValue
+                print("[HomeScreenViewModel] Searching with language: \(language)")
+                let result = await userSession.clientProxy.searchRooms(query: query, roomID: nil, language: language)
                 completion(result)
             }
         case .getRoomInfo(let roomId, let completion):

@@ -61,6 +61,10 @@ struct SearchModalView: View {
     @State private var roomResults: [RoomSearchResults] = []
     @State private var isSendButtonPressed = false
     
+    // Language selection
+    @State private var currentLanguage: TranscriptionLanguage = AppSettings().searchLanguage
+    @State private var showLanguageSelector = false
+    
     // Answer field for search results
     @State private var answerText: String? = nil
     
@@ -129,13 +133,19 @@ struct SearchModalView: View {
                 // Bottom input area - either voice recording or text input
                 VStack {
                     Spacer()
-                    if isVoiceRecordingMode {
-                        // Voice recording view with waveform and controls
-                        voiceRecordingBar
-                    } else {
-                        // Regular search bar
-                        searchBar
+                    HStack {
+                        languageSelectorButton
+                        Spacer()
+                        if isVoiceRecordingMode {
+                            // Voice recording view with waveform and controls
+                            voiceRecordingBar
+                        } else {
+                            // Regular search bar
+                            searchBar
+                        }
                     }
+                    .padding()
+                    .background(Color(.systemGray6))
                 }
             }
             .navigationTitle("Search Messages")
@@ -218,8 +228,6 @@ struct SearchModalView: View {
                 }
             }
         }
-        .padding()
-        .background(Color(.systemGray6))
     }
     
     // Voice recording bar that appears at the bottom
@@ -232,8 +240,34 @@ struct SearchModalView: View {
                                 stopVoiceRecording(useTranscript: true)
                                 performSearch()
                             })
-                            .padding()
-                            .background(Color(.systemGray6))
+    }
+
+    /// A reusable language selector button component that shows a menu with available languages
+    private var languageSelectorButton: some View {
+        Menu {
+            ForEach(TranscriptionLanguage.allCases, id: \.self) { language in
+                Button(action: {
+                    selectLanguage(language)
+                }) {
+                    HStack {
+                        Text(language.displayName)
+                        if language == currentLanguage {
+                            Spacer()
+                            Image(systemName: "checkmark")
+                        }
+                    }
+                }
+            }
+        } label: {
+            Text(currentLanguage.shortCode)
+                .font(.compound.bodySMSemibold)
+                .foregroundColor(.white)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(Color.blue)
+                .cornerRadius(4)
+        }
+        .accessibilityLabel("Change search language: \(currentLanguage.displayName)")
     }
     
     private func formatDuration(_ duration: TimeInterval) -> String {
@@ -522,6 +556,44 @@ struct SearchModalView: View {
         // Cancel recording directly instead of using context.send
         audioRecorderState.stopRecording()
         audioRecorderState.currentTranscript = nil
+    }
+    
+    /// Select a specific language, stop and restart recording if needed
+    private func selectLanguage(_ language: TranscriptionLanguage) {
+        print("[SearchModalView] Selecting language: \(language.displayName)")
+        
+        // If the selected language is the same as current, do nothing
+        if language == currentLanguage {
+            return
+        }
+        
+        // Remember if we were recording
+        let wasRecording = audioRecorderState.isRecording
+        
+        // Stop recording if active
+        if wasRecording {
+            // Stop recording without using transcript
+            audioRecorderState.stopRecording()
+        }
+        
+        // Update current language
+        currentLanguage = language
+        
+        // Save the selected language to app settings
+        let appSettings = AppSettings()
+        appSettings.setSearchLanguage(language)
+
+        audioRecorderState.reset()
+        
+        print("[SearchModalView] Changed language to: \(language.displayName)")
+        
+        // Restart recording if it was active
+        if wasRecording {
+            // Small delay to ensure the recording system has time to reset
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                audioRecorderState.startRecording()
+            }
+        }
     }
     
     /// Switch from voice recording to keyboard input

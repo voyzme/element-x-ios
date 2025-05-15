@@ -96,11 +96,17 @@ class VoiceSearchRecorderState: ObservableObject {
         
         print("[VoiceSearchRecorderState] Recording stopped, isRecording = \(isRecording)")
     }
+
+    func reset() {
+        setupSpeechRecognition()
+    }
     
     // MARK: - Private Methods
     
     private func setupSpeechRecognition() {
-        speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
+        let language = AppSettings().searchLanguage.rawValue
+        print("[VoiceSearchRecorderState] Setting up speech recognition with language: \(language)")
+        speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: language))
     }
     
     private func configureAudioSession() {
@@ -119,7 +125,6 @@ class VoiceSearchRecorderState: ObservableObject {
     
     private func startSpeechRecognition() {
         print("[VoiceSearchRecorderState] Starting speech recognition")
-        
         // First check if speech recognition is available
         guard let speechRecognizer = speechRecognizer, speechRecognizer.isAvailable else {
             print("[VoiceSearchRecorderState] Speech recognition not available")

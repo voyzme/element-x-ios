@@ -5,8 +5,12 @@
 // Please see LICENSE in the repository root for full details.
 //
 
+import Combine
 import Compound
+import Foundation
 import SwiftUI
+
+// Import TranscriptionLanguage from AppSettings
 
 // MARK: - Coordinator
 
@@ -26,30 +30,6 @@ enum RoomDetailsScreenViewModelAction {
 }
 
 // MARK: View
-
-enum TranscriptionLanguage: String, CaseIterable, Identifiable {
-    case english = "en"
-    case italian = "it"
-    case spanish = "es"
-    case german = "de"
-    
-    var id: String { rawValue }
-    
-    var displayName: String {
-        switch self {
-        case .english: return "English"
-        case .italian: return "Italian"
-        case .spanish: return "Spanish"
-        case .german: return "German"
-        }
-    }
-    
-    static var defaultLanguage: TranscriptionLanguage {
-        // Try to match the app language with available transcription languages
-        let appLanguage = Bundle.app.preferredLocalizations.first ?? "en"
-        return TranscriptionLanguage(rawValue: appLanguage) ?? .english
-    }
-}
 
 struct RoomDetailsScreenViewState: BindableState {
     var details: RoomDetails

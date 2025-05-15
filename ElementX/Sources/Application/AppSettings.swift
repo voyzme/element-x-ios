@@ -37,6 +37,7 @@ final class AppSettings {
         case sharePresence
         case hideUnreadMessagesBadge
         case hideTimelineMedia
+        case searchLanguage
         
         case elementCallBaseURLOverride
         case elementCallEncryptionEnabled
@@ -297,6 +298,63 @@ final class AppSettings {
     
     @UserPreference(key: UserDefaultsKeys.hideTimelineMedia, defaultValue: false, storageType: .userDefaults(store))
     var hideTimelineMedia
+    
+    // MARK: - Search Language
+    
+    /// Get the current search language
+    var searchLanguage: TranscriptionLanguage {
+        if let languageString = AppSettings.store.string(forKey: UserDefaultsKeys.searchLanguage.rawValue),
+           let language = TranscriptionLanguage(rawValue: languageString) {
+            return language
+        }
+        return TranscriptionLanguage.defaultLanguage
+    }
+    
+    /// Set the search language
+    func setSearchLanguage(_ language: TranscriptionLanguage) {
+        AppSettings.store.set(language.rawValue, forKey: UserDefaultsKeys.searchLanguage.rawValue)
+        NotificationCenter.default.post(name: .searchLanguageDidChange, object: nil, userInfo: ["language": language])
+    }
+}
+
+// MARK: - Transcription Language Enum
+
+/// Language options for transcription and search
+enum TranscriptionLanguage: String, CaseIterable, Identifiable {
+    case english = "en"
+    case italian = "it"
+    case spanish = "es"
+    case german = "de"
+    
+    var id: String { rawValue }
+    
+    var displayName: String {
+        switch self {
+        case .english: return "English"
+        case .italian: return "Italian"
+        case .spanish: return "Spanish"
+        case .german: return "German"
+        }
+    }
+    
+    var shortCode: String {
+        switch self {
+        case .english: return "EN"
+        case .italian: return "IT"
+        case .spanish: return "ES"
+        case .german: return "DE"
+        }
+    }
+    
+    static var defaultLanguage: TranscriptionLanguage {
+        // Try to match the app language with available transcription languages
+        let appLanguage = Bundle.main.preferredLocalizations.first ?? "en"
+        return TranscriptionLanguage(rawValue: appLanguage) ?? .english
+    }
+}
+
+extension Notification.Name {
+    static let searchLanguageDidChange = Notification.Name("SearchLanguageDidChangeNotification")
 }
 
 extension AppSettings: CommonSettingsProtocol { }
