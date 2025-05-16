@@ -75,7 +75,7 @@ class AppleSpeechTranscription {
         
         // Configure audio session for recording
         let audioSession = AVAudioSession.sharedInstance()
-        try audioSession.setCategory(.record, mode: .measurement, options: .duckOthers)
+        try audioSession.setCategory(.playAndRecord, mode: .measurement, options: [.duckOthers, .allowBluetooth])
         try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
         
         // Create and configure the speech recognition request
