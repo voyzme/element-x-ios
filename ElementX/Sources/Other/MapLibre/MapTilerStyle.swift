@@ -9,6 +9,6 @@
 /// Values should be Map Libre style IDs generated with an account where the API key belongs to.
 /// For more information read [FORKING.md](https://github.com/element-hq/element-x-ios/blob/develop/docs/FORKING.md#setup-the-location-sharing).
 enum MapTilerStyle: String {
-    case light = "9bc819c8-e627-474a-a348-ec144fe3d810"
-    case dark = "dea61faf-292b-4774-9660-58fcef89a7f3"
+    case light = "0196cf7f-10fa-7a04-8d88-a026cba04683"
+    case dark = "0196d824-fd1f-74e1-8392-2698cacdeaa0"
 }
