@@ -208,14 +208,14 @@ final class AppSettings {
     /// **Note:** Analytics are disabled by default for forks. If you are maintaining a fork, set custom configurations.
     let analyticsConfiguration = AnalyticsConfiguration(isEnabled: true,
                                                         host: "https://eu.i.posthog.com",
-                                                        apiKey: "phc_7XxSyA6hZRAhbcgd7OGiFIjhmd3YLjN6U0NaGnqrPSQ",
+                                                        apiKey: Secrets.posthogAPIKey,
                                                         termsURL: "https://voicedrop.dev/cookie-policy")
     #else
     /// The configuration to use for analytics. Set `isEnabled` to false to disable analytics.
     /// **Note:** Analytics are disabled by default for forks. If you are maintaining a fork, set custom configurations.
     let analyticsConfiguration = AnalyticsConfiguration(isEnabled: true,
                                                         host: "https://eu.i.posthog.com",
-                                                        apiKey: "phc_7XxSyA6hZRAhbcgd7OGiFIjhmd3YLjN6U0NaGnqrPSQ",
+                                                        apiKey: Secrets.posthogAPIKey,
                                                         termsURL: URL("https://voicedrop.dev/cookie-policy"))
     #endif
         
@@ -260,7 +260,7 @@ final class AppSettings {
     let mapTilerBaseURL: URL = "https://api.maptiler.com/maps"
 
     // maptiler api key
-    let mapTilerApiKey = InfoPlistReader.main.mapLibreAPIKey
+    let mapTilerApiKey = Secrets.mapLibreAPIKey
     
     // MARK: - Presence
 
@@ -315,6 +315,17 @@ final class AppSettings {
         AppSettings.store.set(language.rawValue, forKey: UserDefaultsKeys.searchLanguage.rawValue)
         NotificationCenter.default.post(name: .searchLanguageDidChange, object: nil, userInfo: ["language": language])
     }
+}
+
+// MARK: - Secrets
+
+/// Enum to store API keys and other sensitive information
+enum Secrets {
+    /// PostHog API key for analytics
+    static let posthogAPIKey = InfoPlistReader.main.posthogAPIKey
+    
+    /// MapLibre API key for maps
+    static let mapLibreAPIKey = InfoPlistReader.main.mapLibreAPIKey
 }
 
 // MARK: - Transcription Language Enum

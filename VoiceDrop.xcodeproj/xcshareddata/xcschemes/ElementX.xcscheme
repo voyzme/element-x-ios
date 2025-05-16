@@ -95,6 +95,16 @@
             value = "trace"
             isEnabled = "YES">
          </EnvironmentVariable>
+         <EnvironmentVariable
+            key = "POSTHOG_API_KEY"
+            value = "phc_7XxSyA6hZRAhbcgd7OGiFIjhmd3YLjN6U0NaGnqrPSQ"
+            isEnabled = "YES">
+         </EnvironmentVariable>
+         <EnvironmentVariable
+            key = "MAPLIBRE_API_KEY"
+            value = ""
+            isEnabled = "YES">
+         </EnvironmentVariable>
       </EnvironmentVariables>
    </LaunchAction>
    <ProfileAction

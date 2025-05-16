@@ -110,6 +110,7 @@ targets:
           LSItemContentTypes: $(PILLS_UT_TYPE_IDENTIFIER)
         LSSupportsOpeningDocumentsInPlace: false
         mapLibreAPIKey: $(MAPLIBRE_API_KEY)
+        posthogAPIKey: $(POSTHOG_API_KEY)
 
 
     settings:
