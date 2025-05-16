@@ -105,7 +105,7 @@ struct ComposerToolbar: View {
                             .frame(width: 60, height: 60)
                         if !context.viewState.showSendButton {
                             voiceMessageRecordingButton(mode: context.viewState.isVoiceMessageModeActivated ? .recording : .idle)
-                                .scaleEffect(1.2)
+                                .scaleEffect(1.5)
                         } else {
                             sendButton
                         }
