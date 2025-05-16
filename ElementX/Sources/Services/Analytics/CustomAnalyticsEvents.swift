@@ -57,4 +57,28 @@ extension AnalyticsEvent {
             return props
         }
     }
+
+    /// Event for tracking search
+    struct Search: AnalyticsEventProtocol {
+        let eventName = "Search"
+        let isSubmitted: Bool
+        let isVoiceSearch: Bool?
+        let queryLength: Int?
+
+        var properties: [String: Any] {
+            var props: [String: Any] = [
+                "isSubmitted": isSubmitted
+            ]
+            
+            if let isVoiceSearch = isVoiceSearch {
+                props["isVoiceSearch"] = isVoiceSearch
+            }
+
+            if let queryLength = queryLength {
+                props["queryLength"] = queryLength
+            }
+            
+            return props
+        }
+    }
 }

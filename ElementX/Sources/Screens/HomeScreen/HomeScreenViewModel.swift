@@ -339,6 +339,10 @@ class HomeScreenViewModel: HomeScreenViewModelType, HomeScreenViewModelProtocol 
             }
         case .declineInvite(let roomIdentifier):
             showDeclineInviteConfirmationAlert(roomID: roomIdentifier)
+        case .trackSearch(let isSubmitted, let isVoiceSearch, let queryLength):
+            analyticsService.trackSearch(isSubmitted: isSubmitted,
+                                         isVoiceSearch: isVoiceSearch,
+                                         queryLength: queryLength)
         }
     }
     

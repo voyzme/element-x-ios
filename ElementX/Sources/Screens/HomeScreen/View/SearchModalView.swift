@@ -164,6 +164,10 @@ struct SearchModalView: View {
                 }
             }
             .onAppear {
+                // Track the search
+                context.send(viewAction: .trackSearch(isSubmitted: false,
+                                                      isVoiceSearch: nil,
+                                                      queryLength: nil))
                 // Start voice recording mode automatically when the view appears
                 print("[SearchModalView] View appeared, starting voice recording")
                 // Set the mode first
@@ -208,6 +212,10 @@ struct SearchModalView: View {
                 .onSubmit {
                     print("[SearchModalView] Search submitted")
                     performSearch()
+                    // Track the search
+                    context.send(viewAction: .trackSearch(isSubmitted: true,
+                                                          isVoiceSearch: false,
+                                                          queryLength: searchText.count))
                 }
             
             if !searchText.isEmpty {
@@ -239,6 +247,10 @@ struct SearchModalView: View {
                                 print("[SearchModalView] Using transcript for search: \(transcript)")
                                 stopVoiceRecording(useTranscript: true)
                                 performSearch()
+                                // Track the search
+                                context.send(viewAction: .trackSearch(isSubmitted: true,
+                                                                      isVoiceSearch: true,
+                                                                      queryLength: transcript.count))
                             })
     }
 

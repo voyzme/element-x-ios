@@ -181,6 +181,14 @@ extension AnalyticsService {
                                                   isReply: isReply,
                                                   startsThread: startsThread))
     }
+
+    func trackSearch(isSubmitted: Bool,
+                     isVoiceSearch: Bool?,
+                     queryLength: Int?) {
+        capture(event: AnalyticsEvent.Search(isSubmitted: isSubmitted,
+                                             isVoiceSearch: isVoiceSearch,
+                                             queryLength: queryLength))
+    }
     
     /// Track the presentation of a room
     /// - Parameters:
