@@ -47,6 +47,18 @@ enum HomeScreenViewAction {
     
     case acceptInvite(roomIdentifier: String)
     case declineInvite(roomIdentifier: String)
+    
+    // Search actions
+    case searchGlobally(query: String, completion: (Result<[String: Any], ClientProxyError>) -> Void)
+    case getRoomInfo(roomId: String, completion: (RoomSummary?) -> Void)
+    case getMessageContent(roomId: String, eventId: String, completion: (TimelineItemProxy?) -> Void)
+    case trackSearch(isSubmitted: Bool, isVoiceSearch: Bool?, queryLength: Int?)
+    
+    // Voice search actions
+    case startVoiceRecording
+    case stopVoiceRecording(useTranscript: Bool)
+    case cancelVoiceRecording
+    case switchToKeyboard
 }
 
 enum HomeScreenRoomListMode: CustomStringConvertible {

@@ -461,6 +461,29 @@ class ClientProxy: ClientProxyProtocol {
         }
     }
     
+    /// Search for messages in rooms.
+    /// - Parameters:
+    ///   - query: The search query text.
+    ///   - roomID: Optional room ID to limit search to a specific room.
+    ///   - language: The language code for the search (e.g., "en").
+    /// - Returns: A result containing either the search response as a dictionary or an error.
+    func searchRooms(query: String, roomID: String? = nil, language: String = "en") async -> Result<[String: Any], ClientProxyError> {
+        do {
+            let jsonString = try await client.roomSearch(query: query, roomId: roomID, language: language)
+            
+            guard let jsonData = jsonString.data(using: .utf8),
+                  let jsonDict = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any] else {
+                MXLog.error("Failed to parse search response JSON")
+                return .failure(.sdkError(NSError(domain: "ClientProxyErrorDomain", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid search response format"])))
+            }
+            
+            return .success(jsonDict)
+        } catch {
+            MXLog.error("Failed searching with query: \(query) with error: \(error)")
+            return .failure(.sdkError(error))
+        }
+    }
+    
     func knockRoomAlias(_ roomAlias: String, message: String?) async -> Result<Void, ClientProxyError> {
         do {
             let room = try await client.knock(roomIdOrAlias: roomAlias, reason: message, serverNames: [])
@@ -1020,15 +1043,6 @@ class ClientProxy: ClientProxyProtocol {
             return .failure(.sdkError(error))
         }
     }
-    
-//    func voyzmeSummarize(for userID: String) async -> Result<String, ClientProxyError> {
-//        do {
-//            return try await .success(client.voyzmeSummarize(roomIdOrAlias: , eventId: ))
-//        } catch {
-//            MXLog.error("Failed to summarize identity: \(error)")
-//            return .failure(.sdkError(error))
-//        }
-//    }
 }
 
 extension ClientProxy: MediaLoaderProtocol {

@@ -13,6 +13,9 @@ protocol HomeScreenViewModelProtocol {
     
     var context: HomeScreenViewModelType.Context { get }
     
+    // Voice recording state
+    var audioRecorderState: VoiceSearchRecorderState { get }
+    
     // periphery: ignore - used in release mode
     func presentCrashedLastRunAlert()
 }

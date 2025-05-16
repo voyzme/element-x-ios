@@ -16,6 +16,7 @@ struct InfoPlistReader {
         static let bundleDisplayName = "CFBundleDisplayName"
         static let productionAppName = "productionAppName"
         static let mapLibreAPIKey = "mapLibreAPIKey"
+        static let posthogAPIKey = "posthogAPIKey"
         static let utExportedTypeDeclarationsKey = "UTExportedTypeDeclarations"
         static let utTypeIdentifierKey = "UTTypeIdentifier"
         static let utDescriptionKey = "UTTypeDescription"
@@ -92,6 +93,12 @@ struct InfoPlistReader {
     
     var mapLibreAPIKey: String {
         infoPlistValue(forKey: Keys.mapLibreAPIKey)
+    }
+    
+    // MARK: - Analytics
+    
+    var posthogAPIKey: String {
+        infoPlistValue(forKey: Keys.posthogAPIKey)
     }
     
     // MARK: - Custom App Scheme

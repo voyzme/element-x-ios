@@ -725,6 +725,12 @@ extension PreviewTests {
         }
     }
 
+    func test_searchModalView() {
+        for preview in SearchModalView_Previews._allPreviews {
+            assertSnapshots(matching: preview)
+        }
+    }
+
     func test_secureBackupKeyBackupScreen() {
         for preview in SecureBackupKeyBackupScreen_Previews._allPreviews {
             assertSnapshots(matching: preview)

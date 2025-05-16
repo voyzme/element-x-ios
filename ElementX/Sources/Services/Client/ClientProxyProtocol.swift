@@ -149,6 +149,14 @@ protocol ClientProxyProtocol: AnyObject, MediaLoaderProtocol {
     
     func knockRoomAlias(_ roomAlias: String, message: String?) async -> Result<Void, ClientProxyError>
     
+    /// Search for messages across rooms or within a specific room.
+    /// - Parameters:
+    ///   - query: The search query text.
+    ///   - roomID: Optional room ID to limit search to a specific room.
+    ///   - language: The language code for the search (e.g., "en").
+    /// - Returns: A result containing either the search response as a dictionary or an error.
+    func searchRooms(query: String, roomID: String?, language: String) async -> Result<[String: Any], ClientProxyError>
+    
     func uploadMedia(_ media: MediaInfo) async -> Result<String, ClientProxyError>
     
     func roomForIdentifier(_ identifier: String) async -> RoomProxyType?
