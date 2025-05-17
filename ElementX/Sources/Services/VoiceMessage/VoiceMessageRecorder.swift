@@ -200,6 +200,7 @@ class VoiceMessageRecorder: VoiceMessageRecorderProtocol {
     private var audioTranscription: AudioStreamTranscription?
     private var appleSpeechTranscription: AppleSpeechTranscription?
     private(set) var currentTranscript = ""
+    private(set) var transcriptionLanguage = "en"
     
     /// Set the transcription method to use
     /// - Parameter useApple: If true, use Apple's Speech framework. If false, use Deepgram.
@@ -240,20 +241,10 @@ class VoiceMessageRecorder: VoiceMessageRecorderProtocol {
         await stopPlayback()
         previewAudioPlayer?.reset()
         recordingCancelled = false
-
-        // Get the transcription language from the settings
-        var language = "en" // Default to English
         
         // Dump all keys in shared UserDefaults for debugging
         MXLog.debug("Checking for transcription language in UserDefaults")
         if let userDefaults = UserDefaults(suiteName: "group.io.element.elementx") {
-            MXLog.debug("All keys in shared UserDefaults:")
-            for (key, value) in userDefaults.dictionaryRepresentation() {
-                if key.contains("transcription") {
-                    MXLog.debug("  \(key): \(value)")
-                }
-            }
-            
             if let roomProxy = roomProxy {
                 // Fallback to roomProxy if available
                 let roomID = roomProxy.id
@@ -261,13 +252,13 @@ class VoiceMessageRecorder: VoiceMessageRecorderProtocol {
                 MXLog.debug("Looking for room-specific transcription language with key: \(key)")
                 
                 if let languageString = userDefaults.string(forKey: key) {
-                    language = languageString
-                    MXLog.debug("Using room-specific transcription language: \(language)")
+                    transcriptionLanguage = languageString
+                    MXLog.debug("Using room-specific transcription language: \(transcriptionLanguage)")
                 }
             }
         }
         
-        MXLog.debug("Starting voice recording with transcription, language: \(language), using Apple transcription: \(useAppleTranscription)")
+        MXLog.debug("Starting voice recording with transcription, language: \(transcriptionLanguage), using Apple transcription: \(useAppleTranscription)")
         MXLog.debug("Using audioRecorder instance: \(type(of: audioRecorder)), isRecording: \(audioRecorder.isRecording)")
         
         if useAppleTranscription {
@@ -287,7 +278,7 @@ class VoiceMessageRecorder: VoiceMessageRecorderProtocol {
                 
                 // Initialize the Apple Speech transcription
                 MXLog.debug("Initializing Apple Speech transcription engine")
-                appleSpeechTranscription = try AppleSpeechTranscription(callback: transcriptCallback, language: language)
+                appleSpeechTranscription = try AppleSpeechTranscription(callback: transcriptCallback, language: transcriptionLanguage)
                 
                 // Start the recognition process
                 try appleSpeechTranscription?.startRecognition()
@@ -331,7 +322,7 @@ class VoiceMessageRecorder: VoiceMessageRecorderProtocol {
             do {
                 MXLog.debug("Initializing Deepgram transcription engine")
                 audioTranscription = try AudioStreamTranscription(callback: callback,
-                                                                  language: language,
+                                                                  language: transcriptionLanguage,
                                                                   apiKey: apiKey)
                 MXLog.info("Successfully initialized Deepgram transcription engine")
                 
@@ -593,15 +584,10 @@ class VoiceMessageRecorder: VoiceMessageRecorderProtocol {
             // Get the room-specific transcription language
             let roomID = roomProxy.id
             let key = "transcriptionLanguage-\(roomID)"
-            var language = "en-US" // Default language
             
-            if let languageString = UserDefaults.standard.string(forKey: key) {
-                language = languageString
-                MXLog.debug("Using room-specific transcription language: \(language)")
-            }
-            
+            MXLog.info("Sending transcript event with language: \(transcriptionLanguage)")
             // Use the actual transcript we generated during recording
-            let result_stt = await roomProxy.timeline.sendTranscriptEvent(transcript: currentTranscript, language: language, relatedEventId: eventId)
+            let result_stt = await roomProxy.timeline.sendTranscriptEvent(transcript: currentTranscript, language: transcriptionLanguage, relatedEventId: eventId)
             MXLog.info("Finished sending transcript event: \(result_stt)")
         } else if case .failure(let error) = result {
             MXLog.error("Failed to send the voice message. \(error)")
