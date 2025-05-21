@@ -22,23 +22,43 @@ struct HomeScreenContent: View {
         ZStack {
             roomList
             
+            // Bottom bar with voice recording button and search button
             VStack {
                 Spacer()
-                HStack {
-                    Spacer()
-                    Button {
-                        isSearchModalPresented = true
-                    } label: {
-                        Image(systemName: "magnifyingglass")
-                            .font(.system(size: 20, weight: .semibold))
-                            .foregroundColor(.white)
-                            .frame(width: 56, height: 56)
-                            .background(Color.compound.iconAccentTertiary)
-                            .clipShape(Circle())
-                            .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
+                
+                // Bottom bar
+                ZStack(alignment: .bottom) {
+                    // Content of the bottom bar with proper centering
+                    ZStack {
+                        // Center voice recording button
+                        ZStack {
+                            Circle()
+                                .fill(Color.compound.bgSubtleSecondary)
+                                .frame(width: 60, height: 60)
+                            VoiceMessageRecordingButton(mode: .idle)
+                                .scaleEffect(1.5)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.bottom, 8)
+                        
+                        // Right-aligned search button
+                        HStack {
+                            Spacer()
+                            Button {
+                                isSearchModalPresented = true
+                            } label: {
+                                Image(systemName: "magnifyingglass")
+                                    .font(.system(size: 20, weight: .semibold))
+                                    .foregroundColor(.white)
+                                    .frame(width: 44, height: 44)
+                                    .background(Color.compound.iconAccentTertiary)
+                                    .clipShape(Circle())
+                                    .padding(.trailing, 8)
+                                    .padding(.bottom, 8)
+                            }
+                        }
                     }
-                    .padding(.trailing, 16)
-                    .padding(.bottom, 16)
+                    .padding(.horizontal, 16)
                 }
             }
         }
