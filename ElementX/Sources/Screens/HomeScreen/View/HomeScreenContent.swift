@@ -17,6 +17,7 @@ struct HomeScreenContent: View {
     let viewModel: HomeScreenViewModelProtocol
     
     @State private var isSearchModalPresented = false
+    @State private var isVoiceContactRoutingPresented = false
     
     var body: some View {
         ZStack {
@@ -35,8 +36,13 @@ struct HomeScreenContent: View {
                             Circle()
                                 .fill(Color.compound.bgSubtleSecondary)
                                 .frame(width: 60, height: 60)
-                            VoiceMessageRecordingButton(mode: .idle)
-                                .scaleEffect(1.5)
+                            VoiceMessageRecordingButton(mode: .idle, startRecording: {
+                                // Trigger voice contact routing view
+                                isVoiceContactRoutingPresented = true
+                                // Start voice recording via the view model
+                                context.send(viewAction: .startVoiceRecording)
+                            })
+                            .scaleEffect(1.5)
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.bottom, 8)
@@ -63,11 +69,12 @@ struct HomeScreenContent: View {
             }
         }
         .sheet(isPresented: $isSearchModalPresented) {
-            SearchModalView(context: context, audioRecorderState: viewModel.audioRecorderState)
+            SearchModalView(context: context, audioRecorderState: viewModel.searchRecorderState)
+        }
+        .sheet(isPresented: $isVoiceContactRoutingPresented) {
+            VoiceContactRoutingView(context: context, recorderState: viewModel.contactRoutingRecorderState)
+                .presentationDetents([.fraction(0.3), .medium, .large])
                 .presentationDragIndicator(.visible)
-                .presentationDetents([.large])
-                .presentationContentInteraction(.scrolls)
-                .edgesIgnoringSafeArea(.all)
         }
     }
     

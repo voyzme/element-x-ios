@@ -168,24 +168,26 @@ struct SearchModalView: View {
                 context.send(viewAction: .trackSearch(isSubmitted: false,
                                                       isVoiceSearch: nil,
                                                       queryLength: nil))
+                
                 // Start voice recording mode automatically when the view appears
                 print("[SearchModalView] View appeared, starting voice recording")
-                // Set the mode first
+                
+                // Set up initial state
                 isVoiceRecordingMode = true
                 isSearchFieldFocused = false
                 
-                // Add a slight delay to ensure the view is fully loaded
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    // Send the view action to start recording
-                    context.send(viewAction: .startVoiceRecording)
+                // Add a small delay to ensure the view and audio session are ready
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    // Start recording directly through audioRecorderState
+                    audioRecorderState.startRecording()
                     
-                    // Force UI update to ensure recording indicator is visible
+                    // Verify recording started
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                         if !audioRecorderState.isRecording {
-                            print("[SearchModalView] Recording didn't start, trying again")
-                            context.send(viewAction: .startVoiceRecording)
+                            print("[SearchModalView] Recording didn't start, resetting state and trying again")
+                            audioRecorderState.stopRecording()
+                            audioRecorderState.startRecording()
                         }
-                        print("[SearchModalView] Voice recording state: \(audioRecorderState.isRecording)")
                     }
                 }
             }

@@ -10,6 +10,7 @@
 import AVFoundation
 import Combine
 import Foundation
+import MatrixRustSDK
 import Speech
 import SwiftUI
 
@@ -31,6 +32,12 @@ class VoiceSearchRecorderState: ObservableObject {
     private var displayLink: CADisplayLink?
     private var fakeWaveformTimer: Timer?
     private var cancellables = Set<AnyCancellable>()
+    
+    // Properties needed for voice message sending
+    let audioRecorder = AudioRecorder()
+    var recordingDuration: UInt64 { UInt64(duration * 1000) } // Convert to milliseconds
+    var transcriptionLanguage = "en" // Default language
+    private var recordingFileURL: URL? // Store the recording file URL
     
     init() {
         // Initialize with empty state
@@ -64,15 +71,50 @@ class VoiceSearchRecorderState: ObservableObject {
     func startRecording() {
         print("[VoiceSearchRecorderState] Starting recording")
         
+        // Make sure any existing recording is properly cleaned up
+        if isRecording {
+            stopRecording()
+        }
+        
+        // Configure audio session first
+        do {
+            print("[VoiceSearchRecorderState] Configuring audio session")
+            try AVAudioSession.sharedInstance().setCategory(.record, mode: .measurement, options: .duckOthers)
+            try AVAudioSession.sharedInstance().setActive(true, options: .notifyOthersOnDeactivation)
+            print("[VoiceSearchRecorderState] Audio session configured successfully")
+        } catch {
+            print("[VoiceSearchRecorderState] Failed to configure audio session: \(error)")
+            return
+        }
+        
         // Reset state
         duration = 0
         currentTranscript = nil
+        waveformSamples.removeAll()
         
-        // Start audio session and recording
-        configureAudioSession()
-        startSpeechRecognition()
+        // Create a temporary file URL for recording
+        let tempDir = FileManager.default.temporaryDirectory
+        let tempFile = tempDir.appendingPathComponent(UUID().uuidString)
+        recordingFileURL = tempFile
+        
+        print("[VoiceSearchRecorderState] Starting speech recognition")
+        // Start new recording components
+        startAudioEngine()
         startDisplayLink()
         startFakeWaveformTimer()
+        
+        // Only set recording state after everything is set up
+        isRecording = true
+        print("[VoiceSearchRecorderState] Recording started, isRecording = \(isRecording)")
+        startDisplayLink()
+        startFakeWaveformTimer()
+        
+        // Start the audio recorder for voice message recording
+        if let fileURL = recordingFileURL {
+            Task {
+                await audioRecorder.record(audioFileURL: fileURL)
+            }
+        }
         
         // Update UI state - this will automatically trigger objectWillChange
         // because isRecording is a @Published property
@@ -90,6 +132,11 @@ class VoiceSearchRecorderState: ObservableObject {
         stopFakeWaveformTimer()
         stopSpeechRecognition()
         
+        // Stop the audio recorder asynchronously
+        Task {
+            await audioRecorder.stopRecording()
+        }
+        
         // Update UI state - this will automatically trigger objectWillChange
         // because isRecording is a @Published property
         isRecording = false
@@ -100,11 +147,82 @@ class VoiceSearchRecorderState: ObservableObject {
     func reset() {
         setupSpeechRecognition()
     }
+
+    /// Build a waveform from the current recording
+    /// - Returns: A result containing the waveform or an error
+    func buildRecordingWaveform() async -> Result<[UInt16], VoiceMessageRecorderError> {
+        // Use the current waveform samples to build a waveform
+        // Normalize the samples to be between 0 and 1, then convert to UInt16 values
+        // Matrix waveform values are in the range 0-1024
+        let normalizedSamples = waveformSamples.map { UInt16(min(max($0, 0), 1) * 1024) }
+        
+        // Return the array of UInt16 values
+        return .success(normalizedSamples)
+    }
+    
+    func sendVoiceMessage(inRoom roomProxy: JoinedRoomProxyProtocol, audioConverter: AudioConverterProtocol) async -> Result<Void, VoiceMessageRecorderError> {
+        guard let url = recordingFileURL else {
+            return .failure(VoiceMessageRecorderError.missingRecordingFile)
+        }
+        
+        // convert the file
+        let sourceFilename = url.deletingPathExtension().lastPathComponent
+        let oggFile = URL.temporaryDirectory.appendingPathComponent(sourceFilename).appendingPathExtension("ogg")
+        defer {
+            // delete the temporary file
+            try? FileManager.default.removeItem(at: oggFile)
+        }
+
+        do {
+            try audioConverter.convertToOpusOgg(sourceURL: url, destinationURL: oggFile)
+        } catch {
+            return .failure(.failedSendingVoiceMessage)
+        }
+
+        // send it
+        let size: UInt64
+        do {
+            size = try UInt64(FileManager.default.sizeForItem(at: oggFile))
+        } catch {
+            MXLog.error("Failed to get the recording file size. \(error)")
+            return .failure(.failedSendingVoiceMessage)
+        }
+        
+        // Create audio info and waveform
+        let audioInfo = AudioInfo(duration: TimeInterval(duration), size: size, mimetype: "audio/ogg")
+        guard case .success(let waveform) = await buildRecordingWaveform() else {
+            return .failure(.failedSendingVoiceMessage)
+        }
+        
+        // Send the voice message
+        let result = await roomProxy.timeline.sendVoiceMessage(url: oggFile,
+                                                               audioInfo: audioInfo,
+                                                               waveform: waveform,
+                                                               progressSubject: nil) { _ in }
+        
+        // Check if voice message was sent successfully
+        if case .success(let eventId) = result {
+            // Get the room-specific transcription language
+            let roomID = roomProxy.id
+            
+            MXLog.info("Sending transcript event with language: \(transcriptionLanguage)")
+            // Use the actual transcript we generated during recording
+            let transcript = currentTranscript ?? ""
+            let result_stt = await roomProxy.timeline.sendTranscriptEvent(transcript: transcript, language: transcriptionLanguage, relatedEventId: eventId)
+            MXLog.info("Finished sending transcript event: \(result_stt)")
+        } else if case .failure(let error) = result {
+            MXLog.error("Failed to send the voice message. \(error)")
+            return .failure(.failedSendingVoiceMessage)
+        }
+        
+        return .success(())
+    }
     
     // MARK: - Private Methods
     
     private func setupSpeechRecognition() {
         let language = AppSettings().searchLanguage.rawValue
+        transcriptionLanguage = language
         print("[VoiceSearchRecorderState] Setting up speech recognition with language: \(language)")
         speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: language))
     }
@@ -146,8 +264,11 @@ class VoiceSearchRecorderState: ObservableObject {
     }
     
     private func startAudioEngine() {
-        // Create a new audio engine if needed
-        let engine = audioEngine ?? AVAudioEngine()
+        // First, ensure any existing engine is fully cleaned up
+        stopSpeechRecognition()
+        
+        // Create a fresh audio engine
+        let engine = AVAudioEngine()
         audioEngine = engine
         
         // Create a new recognition request
@@ -161,16 +282,17 @@ class VoiceSearchRecorderState: ObservableObject {
             let node = engine.inputNode
             inputNode = node
             
-            // Install a tap on the audio input
-            let recordingFormat = node.outputFormat(forBus: 0)
-            node.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { [weak self] buffer, _ in
+            // Get the hardware input format
+            let inputFormat = node.inputFormat(forBus: 0)
+            print("[VoiceSearchRecorderState] Hardware input format: \(inputFormat)")
+            
+            // Install a tap on the audio input using the hardware format
+            node.installTap(onBus: 0, bufferSize: 1024, format: inputFormat) { [weak self] buffer, _ in
                 self?.recognitionRequest?.append(buffer)
-                
-                // Calculate audio level for waveform
                 self?.processAudioBuffer(buffer)
             }
             
-            // Start the audio engine
+            // Prepare and start the audio engine
             engine.prepare()
             try engine.start()
             
@@ -180,15 +302,14 @@ class VoiceSearchRecorderState: ObservableObject {
                 
                 Task { @MainActor in
                     if let result = result {
-                        // Update the transcript
                         let transcript = result.bestTranscription.formattedString
                         self.currentTranscript = transcript
                         print("[VoiceSearchRecorderState] Transcript updated: \(transcript)")
                     }
                     
                     if error != nil || result?.isFinal == true {
-                        // Stop if there's an error or if we're done
                         print("[VoiceSearchRecorderState] Recognition finished or error: \(error?.localizedDescription ?? "No error")")
+                        self.stopSpeechRecognition()
                     }
                 }
             }
@@ -227,23 +348,35 @@ class VoiceSearchRecorderState: ObservableObject {
     private func stopSpeechRecognition() {
         print("[VoiceSearchRecorderState] Stopping speech recognition")
         
-        // Stop audio engine and remove tap
-        if let engine = audioEngine, let node = inputNode {
-            engine.stop()
-            node.removeTap(onBus: 0)
+        // Cancel any ongoing recognition task first
+        if let task = recognitionTask {
+            task.cancel()
+            recognitionTask = nil
         }
         
         // End audio for the recognition request
-        recognitionRequest?.endAudio()
+        if let request = recognitionRequest {
+            request.endAudio()
+            recognitionRequest = nil
+        }
         
-        // Cancel the recognition task
-        recognitionTask?.cancel()
+        // Stop audio engine and remove tap
+        if let engine = audioEngine {
+            // Remove tap first if it exists
+            if let node = inputNode {
+                node.removeTap(onBus: 0)
+            }
+            // Then stop and reset the engine
+            engine.stop()
+            engine.reset()
+            audioEngine = nil
+        }
         
-        // Clear all references
-        audioEngine = nil
+        // Clear remaining references
         inputNode = nil
-        recognitionRequest = nil
-        recognitionTask = nil
+        
+        // Deactivate audio session
+        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         
         print("[VoiceSearchRecorderState] Speech recognition stopped")
     }

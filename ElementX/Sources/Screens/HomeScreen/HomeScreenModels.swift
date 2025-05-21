@@ -58,7 +58,23 @@ enum HomeScreenViewAction {
     case startVoiceRecording
     case stopVoiceRecording(useTranscript: Bool)
     case cancelVoiceRecording
-    case switchToKeyboard
+
+    // Voice contact routing actions
+    case routeContacts(messageContent: String, completion: (Result<[SuggestedRoom], Error>) -> Void)
+    case getDirectRoom(userId: String, completion: (String?) -> Void)
+    case createDirectRoom(with: String, completion: (Result<String, Error>) -> Void)
+    case sendVoiceMessageToRoom(roomId: String, transcript: String, completion: (Result<Void, Error>) -> Void)
+    
+    // User indicator actions
+    case showIndicator(_ indicator: UserIndicator)
+    case hideIndicator(_ indicator: UserIndicator)
+}
+
+// Model for suggested rooms from voice routing
+struct SuggestedRoom: Identifiable {
+    let id = UUID()
+    let roomId: String
+    let score: Double
 }
 
 enum HomeScreenRoomListMode: CustomStringConvertible {

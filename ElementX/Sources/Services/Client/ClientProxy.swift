@@ -483,6 +483,32 @@ class ClientProxy: ClientProxyProtocol {
             return .failure(.sdkError(error))
         }
     }
+
+    func routeContacts(messageContent: String, language: String) async -> Result<[String: Any], ClientProxyError> {
+        do {
+            let jsonString = try await client.routeContacts(messageContent: messageContent, language: language)
+            
+            guard let jsonData = jsonString.data(using: .utf8) else {
+                MXLog.error("Failed to convert contact routing response to data")
+                return .failure(.sdkError(NSError(domain: "ClientProxyErrorDomain", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid contact routing response format"])))
+            }
+            
+            do {
+                guard let jsonDict = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any] else {
+                    MXLog.error("Failed to parse contact routing response as dictionary")
+                    return .failure(.sdkError(NSError(domain: "ClientProxyErrorDomain", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid contact routing response format"])))
+                }
+                
+                return .success(jsonDict)
+            } catch {
+                MXLog.error("Failed to parse contact routing JSON: \(error)")
+                return .failure(.sdkError(error))
+            }
+        } catch {
+            MXLog.error("Contact routing failed: \(error)")
+            return .failure(.sdkError(error))
+        }
+    }
     
     func knockRoomAlias(_ roomAlias: String, message: String?) async -> Result<Void, ClientProxyError> {
         do {
