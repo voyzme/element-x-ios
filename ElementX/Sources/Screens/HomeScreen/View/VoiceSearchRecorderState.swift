@@ -42,11 +42,6 @@ class VoiceSearchRecorderState: ObservableObject {
     init() {
         // Initialize with empty state
         setupSpeechRecognition()
-        
-        // Generate some initial waveform data
-        for _ in 0..<30 {
-            waveformSamples.append(Float.random(in: 0.1...0.5))
-        }
     }
   
     deinit {
@@ -101,13 +96,11 @@ class VoiceSearchRecorderState: ObservableObject {
         // Start new recording components
         startAudioEngine()
         startDisplayLink()
-        startFakeWaveformTimer()
         
         // Only set recording state after everything is set up
         isRecording = true
         print("[VoiceSearchRecorderState] Recording started, isRecording = \(isRecording)")
         startDisplayLink()
-        startFakeWaveformTimer()
         
         // Start the audio recorder for voice message recording
         if let fileURL = recordingFileURL {
@@ -129,7 +122,6 @@ class VoiceSearchRecorderState: ObservableObject {
         
         // Stop all recording components
         stopDisplayLink()
-        stopFakeWaveformTimer()
         stopSpeechRecognition()
         
         // Stop the audio recorder asynchronously
@@ -145,6 +137,10 @@ class VoiceSearchRecorderState: ObservableObject {
     }
 
     func reset() {
+        // Reset state
+        duration = 0
+        currentTranscript = nil
+        waveformSamples.removeAll()
         setupSpeechRecognition()
     }
 
@@ -331,18 +327,6 @@ class VoiceSearchRecorderState: ObservableObject {
             let sample = abs(channelData[Int(i)])
             sum += sample
         }
-        
-        // Calculate average and normalize to 0-1 range
-        let average = sum / Float(frameLength)
-        let level = min(max(average * 5, 0.1), 1.0) // Scale and clamp
-        
-        // Update waveform on main thread
-        Task { @MainActor in
-            if self.waveformSamples.count > 30 {
-                self.waveformSamples.removeFirst()
-            }
-            self.waveformSamples.append(level)
-        }
     }
     
     private func stopSpeechRecognition() {
@@ -397,33 +381,6 @@ class VoiceSearchRecorderState: ObservableObject {
         print("[VoiceSearchRecorderState] Display link started")
     }
     
-    private func startFakeWaveformTimer() {
-        // Stop any existing timer
-        stopFakeWaveformTimer()
-        
-        // Create a new timer that fires every 0.1 seconds on the main thread
-        fakeWaveformTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
-            // Use Task to ensure we're on the MainActor when accessing actor-isolated properties
-            Task { @MainActor [weak self] in
-                guard let self = self else { return }
-                
-                // Only proceed if we're still recording
-                if self.isRecording, self.audioEngine == nil {
-                    // Update waveform samples to show activity
-                    if self.waveformSamples.count > 30 {
-                        self.waveformSamples.removeFirst()
-                    }
-                    self.waveformSamples.append(Float.random(in: 0.1...0.8))
-                }
-            }
-        }
-    }
-    
-    private func stopFakeWaveformTimer() {
-        fakeWaveformTimer?.invalidate()
-        fakeWaveformTimer = nil
-    }
-    
     private func stopDisplayLink() {
         print("[VoiceSearchRecorderState] Stopping display link")
         if let link = displayLink {
@@ -435,6 +392,10 @@ class VoiceSearchRecorderState: ObservableObject {
     @objc private func updateDuration() {
         if isRecording {
             duration += 1.0 / 60.0 // Assuming 60fps
+            
+            // Update waveform samples
+            let power = audioRecorder.averagePower()
+            waveformSamples.append(1.0 - power)
         }
     }
     

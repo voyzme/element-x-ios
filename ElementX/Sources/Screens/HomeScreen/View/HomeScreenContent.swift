@@ -71,7 +71,11 @@ struct HomeScreenContent: View {
         .sheet(isPresented: $isSearchModalPresented) {
             SearchModalView(context: context, audioRecorderState: viewModel.searchRecorderState)
         }
-        .sheet(isPresented: $isVoiceContactRoutingPresented) {
+        .sheet(isPresented: $isVoiceContactRoutingPresented, onDismiss: {
+            // Stop recording when sheet is dismissed
+            context.send(viewAction: .cancelVoiceRecording)
+            viewModel.contactRoutingRecorderState.stopRecording()
+        }) {
             VoiceContactRoutingView(context: context, recorderState: viewModel.contactRoutingRecorderState)
                 .presentationDetents([.fraction(0.3), .medium, .large])
                 .presentationDragIndicator(.visible)

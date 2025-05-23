@@ -85,6 +85,7 @@ struct VoiceSearchRecorder: View {
                 .accessibilityLabel("Search with voice recording")
                 .disabled(recorderState.currentTranscript?.isEmpty ?? true)
             }
+            .fixedSize(horizontal: false, vertical: true)
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
             .background(Color.compound.bgCanvasDefault)

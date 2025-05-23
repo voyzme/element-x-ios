@@ -278,7 +278,7 @@ struct SearchModalView: View {
                 .foregroundColor(.white)
                 .padding(.horizontal, 6)
                 .padding(.vertical, 2)
-                .background(Color.blue)
+                .background(Color.compound.iconAccentTertiary)
                 .cornerRadius(4)
         }
         .accessibilityLabel("Change search language: \(currentLanguage.displayName)")

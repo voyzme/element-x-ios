@@ -156,6 +156,8 @@ struct VoiceContactRoutingView: View {
         WaveformLiveCanvas(samples: recorderState.waveformSamples,
                            configuration: configuration)
             .frame(height: 20)
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.horizontal, 8)
     }
     
     private var cancelButton: some View {
