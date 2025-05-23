@@ -12,6 +12,7 @@ import DSWaveformImageViews
 import Foundation
 import MatrixRustSDK
 import Speech
+import SwiftOGG
 import SwiftUI
 
 typealias HomeScreenViewModelType = StateStoreViewModel<HomeScreenViewState, HomeScreenViewAction>
@@ -27,7 +28,8 @@ class HomeScreenViewModel: HomeScreenViewModelType, HomeScreenViewModelProtocol 
     
     // Voice recording properties
     private var voiceRecorder: VoiceMessageRecorderProtocol?
-    let audioRecorderState = VoiceSearchRecorderState()
+    let searchRecorderState = VoiceSearchRecorderState()
+    let contactRoutingRecorderState = VoiceSearchRecorderState()
     private var actionsSubject: PassthroughSubject<HomeScreenViewModelAction, Never> = .init()
     var actions: AnyPublisher<HomeScreenViewModelAction, Never> {
         actionsSubject.eraseToAnyPublisher()
@@ -195,11 +197,11 @@ class HomeScreenViewModel: HomeScreenViewModelType, HomeScreenViewModelProtocol 
                     
                     // If we couldn't find it, try a different approach
                     // Log the failure and return nil
-                    MXLog.error("Could not find event \(eventId) in focused timeline")
+                    MXLog.error("[Voice Contact Routing] Could not find event \(eventId) in focused timeline")
                     completion(nil)
                     
                 case .failure(let error):
-                    MXLog.error("Failed to create focused timeline for event \(eventId): \(error)")
+                    MXLog.error("[Voice Contact Routing] Failed to create focused timeline for event \(eventId): \(error)")
                     completion(nil)
                 }
             }
@@ -208,68 +210,141 @@ class HomeScreenViewModel: HomeScreenViewModelType, HomeScreenViewModelProtocol 
             
         case .startVoiceRecording:
             Task {
-                // Start actual voice recording on the main actor
-                await MainActor.run {
-                    // Start actual voice recording
-                    audioRecorderState.startRecording()
-                    
-                    MXLog.info("Started voice recording for search, isRecording: \(audioRecorderState.isRecording)")
-                }
+                contactRoutingRecorderState.startRecording()
+                MXLog.info("Started voice recording for search using VoiceMessageRecorder")
             }
             
         case .stopVoiceRecording(let useTranscript):
             Task {
-                // Safely get the transcript if needed before stopping
-                var capturedTranscript: String? = nil
-                if useTranscript {
-                    // Use a safe way to access the transcript
-                    capturedTranscript = audioRecorderState.safeGetTranscript()
-                    MXLog.info("Captured transcript before stopping: \(capturedTranscript ?? "nil")")
-                }
-                
-                await MainActor.run {
-                    // Stop the actual recording
-                    audioRecorderState.stopRecording()
-                    
-                    // If we're not using the transcript, clear it
-                    if !useTranscript {
-                        audioRecorderState.currentTranscript = nil
-                    } else if capturedTranscript == nil || capturedTranscript?.isEmpty == true {
-                        // If we want to use the transcript but it's nil or empty, provide a fallback
-                        audioRecorderState.currentTranscript = "voice search query"
-                    } else if let transcript = capturedTranscript {
-                        // Make sure we preserve the transcript we captured
-                        audioRecorderState.currentTranscript = transcript
-                    }
-                    
-                    MXLog.info("Stopped voice recording for search, useTranscript: \(useTranscript)")
-                }
+                contactRoutingRecorderState.stopRecording()
+                MXLog.info("Stopped voice recording using VoiceMessageRecorder")
             }
             
         case .cancelVoiceRecording:
             Task {
-                await MainActor.run {
-                    // Stop the actual recording and clear the transcript
-                    audioRecorderState.stopRecording()
-                    audioRecorderState.currentTranscript = nil
-                    
-                    MXLog.info("Cancelled voice recording for search")
+                contactRoutingRecorderState.stopRecording()
+                contactRoutingRecorderState.reset()
+                MXLog.info("Cancelled voice recording using VoiceMessageRecorder")
+            }
+            
+    // MARK: - Voice Contact Routing Actions
+        
+        case .routeContacts(let messageContent, let completion):
+            Task {
+                // Use the selected language from app settings
+                let language = appSettings.searchLanguage.rawValue
+            
+                // Call the ClientProxy method to route contacts
+                let result = await userSession.clientProxy.routeContacts(messageContent: messageContent, language: language)
+            
+                switch result {
+                case .success(let json):
+                    MXLog.info("[Voice Contact Routing] Contact routing successful: \(json)")
+                    // Parse the JSON response
+                    if let result = json["result"] as? String {
+                        if result == "success" {
+                            if let data = json["data"] as? [[String: Any]] {
+                                // Extract room IDs and scores
+                                var suggestedRooms: [SuggestedRoom] = []
+                            
+                                for roomJson in data {
+                                    if let roomId = roomJson["room_id"] as? String {
+                                        let score = roomJson["score"] as? Double ?? 0.0
+                                    
+                                        let room = SuggestedRoom(roomId: roomId, score: score)
+                                        suggestedRooms.append(room)
+                                    }
+                                }
+                            
+                                // Return the parsed rooms
+                                completion(.success(suggestedRooms))
+                            } else {
+                                MXLog.error("[Voice Contact Routing] Missing or invalid 'data' field in response")
+                                completion(.failure(ClientProxyError.sdkError(NSError(domain: "ClientProxyErrorDomain", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid response format"]))))
+                            }
+                        } else if result == "error" {
+                            MXLog.error("[Voice Contact Routing] Server returned error response")
+                            completion(.failure(ClientProxyError.sdkError(NSError(domain: "ClientProxyErrorDomain", code: -1, userInfo: [NSLocalizedDescriptionKey: "Contact routing server error"]))))
+                        } else {
+                            MXLog.error("[Voice Contact Routing] Unexpected result value: \(result)")
+                            completion(.failure(ClientProxyError.sdkError(NSError(domain: "ClientProxyErrorDomain", code: -1, userInfo: [NSLocalizedDescriptionKey: "Unexpected contact routing response"]))))
+                        }
+                    } else {
+                        MXLog.error("[Voice Contact Routing] Failed to parse contact routing response")
+                        completion(.failure(ClientProxyError.sdkError(NSError(domain: "ClientProxyErrorDomain", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to parse contact routing response"]))))
+                    }
+                case .failure(let error):
+                    MXLog.error("[Voice Contact Routing] Contact routing failed: \(error)")
+                    completion(.failure(error))
                 }
             }
             
-        case .switchToKeyboard:
+        case .getDirectRoom(let userId, let completion):
             Task {
-                await MainActor.run {
-                    // Stop the actual recording
-                    audioRecorderState.stopRecording()
-                    
-                    MXLog.info("Switched to keyboard input for search")
+                let directRoomResult = await userSession.clientProxy.directRoomForUserID(userId)
+                
+                switch directRoomResult {
+                case .success(let roomId):
+                    completion(roomId)
+                case .failure(let error):
+                    MXLog.error("[Voice Contact Routing] Failed to get direct room: \(error)")
+                    completion(nil)
                 }
             }
+            
+        case .createDirectRoom(let userId, let completion):
+            Task {
+                let result = await userSession.clientProxy.createRoom(name: "", topic: "", isRoomPrivate: true, isKnockingOnly: false, userIDs: [userId], avatarURL: nil, aliasLocalPart: nil)
+                
+                switch result {
+                case .success(let roomId):
+                    completion(.success(roomId))
+                case .failure(let error):
+                    MXLog.error("Failed to create direct room: \(error)")
+                    completion(.failure(error))
+                }
+            }
+            
+        case .showIndicator(let indicator):
+            userIndicatorController.submitIndicator(indicator)
+            
+        case .hideIndicator(let indicator):
+            userIndicatorController.retractIndicatorWithId(indicator.id)
+            
+        case .sendVoiceMessageToRoom(let roomId, let transcript, let completion):
+            Task {
+                MXLog.info("[Voice Contact Routing] Sending voice message to room: \(roomId)")
+                
+                // Get the room proxy for the room
+                guard case let .joined(roomProxy) = await userSession.clientProxy.roomForIdentifier(roomId) else {
+                    MXLog.error("[Voice Contact Routing] Failed to get room proxy for room: \(roomId)")
+                    completion(.failure(ClientProxyError.sdkError(NSError(domain: "ClientProxyErrorDomain", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to get room proxy"]))))
+                    return
+                }
+                
+                // Create a new audio converter instance
+                let audioConverter = AudioConverter()
+                
+                // Send the voice message
+                let result = await contactRoutingRecorderState.sendVoiceMessage(inRoom: roomProxy, audioConverter: audioConverter)
+                
+                switch result {
+                case .success:
+                    MXLog.info("[Voice Contact Routing] Voice message sent successfully")
+                    completion(.success(()))
+                    
+                case .failure(let error):
+                    MXLog.error("[Voice Contact Routing] Failed to send voice message: \(error)")
+                    completion(.failure(ClientProxyError.sdkError(NSError(domain: "ClientProxyErrorDomain", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to send voice message: \(error)"]))))
+                }
+            }
+            
         case .selectRoom(let roomIdentifier):
             actionsSubject.send(.presentRoom(roomIdentifier: roomIdentifier))
+            
         case .showRoomDetails(roomIdentifier: let roomIdentifier):
             actionsSubject.send(.presentRoomDetails(roomIdentifier: roomIdentifier))
+            
         case .leaveRoom(roomIdentifier: let roomIdentifier):
             startLeaveRoomProcess(roomID: roomIdentifier)
         case .confirmLeaveRoom(roomIdentifier: let roomIdentifier):
@@ -602,34 +677,6 @@ class HomeScreenViewModel: HomeScreenViewModelType, HomeScreenViewModelProtocol 
         state.bindings.alertInfo = .init(id: UUID(),
                                          title: L10n.commonError,
                                          message: L10n.errorUnknown)
-    }
-}
-
-extension HomeScreenViewModel {
-    /// Simulates voice recording by updating the audio recorder state
-    private func startRecordingSimulation() {
-        // Start a timer to update the duration and waveform samples
-        Task {
-            var elapsedTime: TimeInterval = 0
-            
-            while audioRecorderState.isRecording {
-                // Update duration
-                audioRecorderState.duration = elapsedTime
-                
-                // Generate random waveform samples
-                let newSamples = (0..<10).map { _ in Float.random(in: 0.1...1.0) }
-                audioRecorderState.waveformSamples.append(contentsOf: newSamples)
-                
-                // Keep the waveform samples array at a reasonable size
-                if audioRecorderState.waveformSamples.count > 100 {
-                    audioRecorderState.waveformSamples.removeFirst(10)
-                }
-                
-                // Wait a bit before the next update
-                try? await Task.sleep(nanoseconds: 100_000_000) // 100ms
-                elapsedTime += 0.1
-            }
-        }
     }
 }
 

@@ -616,6 +616,7 @@
 		870A9F3A2DD3978C00908A35 /* VoiceSearchRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 870A9F392DD3978C00908A35 /* VoiceSearchRecorder.swift */; };
 		870A9F3E2DD398C500908A35 /* VoiceSearchRecorderState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 870A9F3D2DD398C500908A35 /* VoiceSearchRecorderState.swift */; };
 		87358F8E2DC5FC1000FA1357 /* KeyboardButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87358F8D2DC5FC1000FA1357 /* KeyboardButton.swift */; };
+		8748BF772DDDB60500F21057 /* VoiceContactRoutingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8748BF762DDDB60500F21057 /* VoiceContactRoutingView.swift */; };
 		8778C61080BB5F4E801F5F04 /* RoomDirectorySearchScreenCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 717D5F3E0036179B487EEB2C /* RoomDirectorySearchScreenCoordinator.swift */; };
 		87B2F566229C8E1B284D82A5 /* UIConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9F0502BFA48E2BB1AF2307E /* UIConstants.swift */; };
 		87C92C702DC791C2002C37DC /* CustomAnalyticsEvents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87C92C6F2DC791C2002C37DC /* CustomAnalyticsEvents.swift */; };
@@ -1848,6 +1849,7 @@
 		872C49517272FCFE6F7BE5C0 /* Analytics+SwiftUI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Analytics+SwiftUI.swift"; sourceTree = "<group>"; };
 		872FE658E570A08AE5652D13 /* SecureBackupKeyBackupScreenModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureBackupKeyBackupScreenModels.swift; sourceTree = "<group>"; };
 		87358F8D2DC5FC1000FA1357 /* KeyboardButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardButton.swift; sourceTree = "<group>"; };
+		8748BF762DDDB60500F21057 /* VoiceContactRoutingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceContactRoutingView.swift; sourceTree = "<group>"; };
 		87514E09CF8C3C4452A7AD59 /* NSRegularExpresion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NSRegularExpresion.swift; sourceTree = "<group>"; };
 		87C92C6F2DC791C2002C37DC /* CustomAnalyticsEvents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomAnalyticsEvents.swift; sourceTree = "<group>"; };
 		87D157628DAB4FD6E0041D85 /* LegalInformationScreenViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegalInformationScreenViewModel.swift; sourceTree = "<group>"; };
@@ -5382,6 +5384,7 @@
 		E82C16BAECB2ADF50E9854DE /* View */ = {
 			isa = PBXGroup;
 			children = (
+				8748BF762DDDB60500F21057 /* VoiceContactRoutingView.swift */,
 				870A9F3D2DD398C500908A35 /* VoiceSearchRecorderState.swift */,
 				870A9F392DD3978C00908A35 /* VoiceSearchRecorder.swift */,
 				870A9F352DD30EEF00908A35 /* SearchModalView.swift */,
@@ -6554,6 +6557,7 @@
 				9384AEA2574DB226E6D49DB9 /* AppLockSetupPINScreen.swift in Sources */,
 				D6B836067DF68B81D044C857 /* AppLockSetupPINScreenCoordinator.swift in Sources */,
 				BB73D59C776DE44945A5E6BC /* AppLockSetupPINScreenModels.swift in Sources */,
+				8748BF772DDDB60500F21057 /* VoiceContactRoutingView.swift in Sources */,
 				099328D27250D27D9428EE3F /* AppLockSetupPINScreenViewModel.swift in Sources */,
 				4D0723D58FF98235DBB6B6E6 /* AppLockSetupPINScreenViewModelProtocol.swift in Sources */,
 				EF555D40965206FD93B9337F /* AppLockSetupSettingsScreen.swift in Sources */,

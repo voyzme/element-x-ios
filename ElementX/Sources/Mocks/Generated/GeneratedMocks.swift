@@ -3087,6 +3087,76 @@ class ClientProxyMock: ClientProxyProtocol {
             return searchRoomsQueryRoomIDLanguageReturnValue
         }
     }
+    //MARK: - routeContacts
+
+    var routeContactsMessageContentLanguageUnderlyingCallsCount = 0
+    var routeContactsMessageContentLanguageCallsCount: Int {
+        get {
+            if Thread.isMainThread {
+                return routeContactsMessageContentLanguageUnderlyingCallsCount
+            } else {
+                var returnValue: Int? = nil
+                DispatchQueue.main.sync {
+                    returnValue = routeContactsMessageContentLanguageUnderlyingCallsCount
+                }
+
+                return returnValue!
+            }
+        }
+        set {
+            if Thread.isMainThread {
+                routeContactsMessageContentLanguageUnderlyingCallsCount = newValue
+            } else {
+                DispatchQueue.main.sync {
+                    routeContactsMessageContentLanguageUnderlyingCallsCount = newValue
+                }
+            }
+        }
+    }
+    var routeContactsMessageContentLanguageCalled: Bool {
+        return routeContactsMessageContentLanguageCallsCount > 0
+    }
+    var routeContactsMessageContentLanguageReceivedArguments: (messageContent: String, language: String)?
+    var routeContactsMessageContentLanguageReceivedInvocations: [(messageContent: String, language: String)] = []
+
+    var routeContactsMessageContentLanguageUnderlyingReturnValue: Result<[String: Any], ClientProxyError>!
+    var routeContactsMessageContentLanguageReturnValue: Result<[String: Any], ClientProxyError>! {
+        get {
+            if Thread.isMainThread {
+                return routeContactsMessageContentLanguageUnderlyingReturnValue
+            } else {
+                var returnValue: Result<[String: Any], ClientProxyError>? = nil
+                DispatchQueue.main.sync {
+                    returnValue = routeContactsMessageContentLanguageUnderlyingReturnValue
+                }
+
+                return returnValue!
+            }
+        }
+        set {
+            if Thread.isMainThread {
+                routeContactsMessageContentLanguageUnderlyingReturnValue = newValue
+            } else {
+                DispatchQueue.main.sync {
+                    routeContactsMessageContentLanguageUnderlyingReturnValue = newValue
+                }
+            }
+        }
+    }
+    var routeContactsMessageContentLanguageClosure: ((String, String) async -> Result<[String: Any], ClientProxyError>)?
+
+    func routeContacts(messageContent: String, language: String) async -> Result<[String: Any], ClientProxyError> {
+        routeContactsMessageContentLanguageCallsCount += 1
+        routeContactsMessageContentLanguageReceivedArguments = (messageContent: messageContent, language: language)
+        DispatchQueue.main.async {
+            self.routeContactsMessageContentLanguageReceivedInvocations.append((messageContent: messageContent, language: language))
+        }
+        if let routeContactsMessageContentLanguageClosure = routeContactsMessageContentLanguageClosure {
+            return await routeContactsMessageContentLanguageClosure(messageContent, language)
+        } else {
+            return routeContactsMessageContentLanguageReturnValue
+        }
+    }
     //MARK: - uploadMedia
 
     var uploadMediaUnderlyingCallsCount = 0
