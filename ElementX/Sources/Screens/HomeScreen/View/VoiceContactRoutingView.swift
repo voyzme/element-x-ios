@@ -50,8 +50,9 @@ struct VoiceContactRoutingView: View {
         Group {
             if showSendButtons, !suggestedRooms.isEmpty {
                 VStack(spacing: 8) {
-                    ForEach(suggestedRooms) { room in
-                        roomButton(for: room)
+                    // Take top 3 rooms sorted by score (ascending order - highest at bottom)
+                    ForEach(Array(suggestedRooms.sorted(by: { $0.score > $1.score }).prefix(3)).reversed(), id: \.id) { room in
+                        roomButton(for: room, isHighestRated: room.score == suggestedRooms.map(\.score).max())
                     }
                     .padding(.vertical, 12)
                     .padding(.horizontal, 16)
@@ -64,18 +65,15 @@ struct VoiceContactRoutingView: View {
         .padding(.horizontal)
     }
     
-    private func roomButton(for room: SuggestedRoom) -> some View {
+    private func roomButton(for room: SuggestedRoom, isHighestRated: Bool) -> some View {
         Button(action: { sendToRoom(room) }) {
             HStack {
                 Text(context.viewState.rooms.first(where: { $0.id == room.roomId })?.name ?? room.roomId)
-                    .font(.compound.bodySM)
+                    .font(isHighestRated ? .compound.bodySMSemibold : .compound.bodySM)
                     .foregroundColor(.compound.textPrimary)
                 Spacer()
-                Text(String(format: "%.0f%%", room.score * 100))
-                    .foregroundColor(.compound.textSecondary)
-                    .font(.compound.bodySM)
                 Image(systemName: "chevron.right")
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.compound.iconSecondary)
             }
             .padding()
             .background(Color(.secondarySystemBackground))

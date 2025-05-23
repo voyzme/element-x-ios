@@ -569,6 +569,7 @@ struct SearchModalView: View {
     private func cancelVoiceRecording() {
         // Cancel recording directly instead of using context.send
         audioRecorderState.stopRecording()
+        audioRecorderState.reset()
         audioRecorderState.currentTranscript = nil
     }
     

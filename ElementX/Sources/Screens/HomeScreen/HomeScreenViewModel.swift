@@ -223,6 +223,7 @@ class HomeScreenViewModel: HomeScreenViewModelType, HomeScreenViewModelProtocol 
         case .cancelVoiceRecording:
             Task {
                 contactRoutingRecorderState.stopRecording()
+                contactRoutingRecorderState.reset()
                 MXLog.info("Cancelled voice recording using VoiceMessageRecorder")
             }
             

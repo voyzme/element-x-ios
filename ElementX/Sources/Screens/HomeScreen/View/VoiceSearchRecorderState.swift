@@ -22,6 +22,7 @@ class VoiceSearchRecorderState: ObservableObject {
     @Published var duration: TimeInterval = 0
     @Published var waveformSamples: [Float] = []
     @Published var currentTranscript: String?
+    @Published var finalTranscript: String?
     
     // Audio recording properties
     private var audioEngine: AVAudioEngine?
@@ -180,7 +181,7 @@ class VoiceSearchRecorderState: ObservableObject {
         do {
             size = try UInt64(FileManager.default.sizeForItem(at: oggFile))
         } catch {
-            MXLog.error("Failed to get the recording file size. \(error)")
+            MXLog.error("[VoiceSearchRecorderState] Failed to get the recording file size. \(error)")
             return .failure(.failedSendingVoiceMessage)
         }
         
@@ -201,13 +202,14 @@ class VoiceSearchRecorderState: ObservableObject {
             // Get the room-specific transcription language
             let roomID = roomProxy.id
             
-            MXLog.info("Sending transcript event with language: \(transcriptionLanguage)")
+            MXLog.info("[VoiceSearchRecorderState] Sending transcript event with language: \(transcriptionLanguage)")
             // Use the actual transcript we generated during recording
-            let transcript = currentTranscript ?? ""
+            let transcript = finalTranscript ?? ""
+            MXLog.info("[VoiceSearchRecorderState] Sending transcript: \(transcript)")
             let result_stt = await roomProxy.timeline.sendTranscriptEvent(transcript: transcript, language: transcriptionLanguage, relatedEventId: eventId)
-            MXLog.info("Finished sending transcript event: \(result_stt)")
+            MXLog.info("[VoiceSearchRecorderState] Finished sending transcript event: \(result_stt)")
         } else if case .failure(let error) = result {
-            MXLog.error("Failed to send the voice message. \(error)")
+            MXLog.error("[VoiceSearchRecorderState] Failed to send the voice message. \(error)")
             return .failure(.failedSendingVoiceMessage)
         }
         
@@ -299,13 +301,19 @@ class VoiceSearchRecorderState: ObservableObject {
                 Task { @MainActor in
                     if let result = result {
                         let transcript = result.bestTranscription.formattedString
+                        if transcript.isEmpty {
+                            self.finalTranscript = self.currentTranscript
+                        }
                         self.currentTranscript = transcript
                         print("[VoiceSearchRecorderState] Transcript updated: \(transcript)")
                     }
                     
                     if error != nil || result?.isFinal == true {
                         print("[VoiceSearchRecorderState] Recognition finished or error: \(error?.localizedDescription ?? "No error")")
-                        self.stopSpeechRecognition()
+                        // Only stop recognition if there's an error
+                        if error != nil {
+                            self.stopSpeechRecognition()
+                        }
                     }
                 }
             }
