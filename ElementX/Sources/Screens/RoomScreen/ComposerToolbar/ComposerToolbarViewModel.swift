@@ -19,6 +19,7 @@ final class ComposerToolbarViewModel: ComposerToolbarViewModelType, ComposerTool
     private let completionSuggestionService: CompletionSuggestionServiceProtocol
     private let analyticsService: AnalyticsService
     private let draftService: ComposerDraftServiceProtocol
+    let roomID: String
     
     private let mentionBuilder: MentionBuilderProtocol
     private let attributedStringBuilder: AttributedStringBuilderProtocol
@@ -29,7 +30,7 @@ final class ComposerToolbarViewModel: ComposerToolbarViewModelType, ComposerTool
     var actions: AnyPublisher<ComposerToolbarViewModelAction, Never> {
         actionsSubject.eraseToAnyPublisher()
     }
-
+    
     private struct WysiwygLinkData {
         let action: LinkAction
         let range: NSRange
@@ -46,10 +47,12 @@ final class ComposerToolbarViewModel: ComposerToolbarViewModelType, ComposerTool
          mediaProvider: MediaProviderProtocol,
          mentionDisplayHelper: MentionDisplayHelper,
          analyticsService: AnalyticsService,
-         composerDraftService: ComposerDraftServiceProtocol) {
+         composerDraftService: ComposerDraftServiceProtocol,
+         roomID: String) {
         self.wysiwygViewModel = wysiwygViewModel
         self.completionSuggestionService = completionSuggestionService
         self.analyticsService = analyticsService
+        self.roomID = roomID
         draftService = composerDraftService
         
         mentionBuilder = MentionBuilder()
@@ -59,6 +62,7 @@ final class ComposerToolbarViewModel: ComposerToolbarViewModelType, ComposerTool
                                                                                       title: L10n.commonVoiceMessage,
                                                                                       duration: 0),
                                                               audioRecorderState: .init(),
+                                                              roomID: roomID,
                                                               bindings: .init()),
                    mediaProvider: mediaProvider)
 
