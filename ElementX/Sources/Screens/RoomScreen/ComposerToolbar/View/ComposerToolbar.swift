@@ -74,7 +74,9 @@ struct ComposerToolbar: View {
             switch context.viewState.composerMode {
             case .recordVoiceMessage(let state):
                 topBarLayout {
-                    VoiceMessageRecordingComposer(recorderState: state)
+                    let key = "transcriptionLanguage-\(context.viewState.roomID)"
+                    let languageCode = UserDefaults(suiteName: "group.io.element.elementx")?.string(forKey: key) ?? "en"
+                    VoiceMessageRecordingComposer(recorderState: state, languageCode: languageCode)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
                         .background(RoundedRectangle(cornerRadius: 12).fill(Color.compound.bgSubtleSecondary))
@@ -353,7 +355,11 @@ struct ComposerToolbar: View {
         case .recordVoiceMessage(let state):
             topBarLayout {
                 voiceMessageTrashButton
-                VoiceMessageRecordingComposer(recorderState: state)
+                let roomID = context.viewState.roomID
+                let key = "transcriptionLanguage-\(roomID)"
+                let languageCode = UserDefaults(suiteName: "group.io.element.elementx")?.string(forKey: key) ?? "en"
+                
+                VoiceMessageRecordingComposer(recorderState: state, languageCode: languageCode)
             }
         case .previewVoiceMessage(let state, let waveform, let isUploading):
             topBarLayout {
@@ -407,7 +413,8 @@ struct ComposerToolbar_Previews: PreviewProvider, TestablePreview {
                                                             mediaProvider: MediaProviderMock(configuration: .init()),
                                                             mentionDisplayHelper: ComposerMentionDisplayHelper.mock,
                                                             analyticsService: ServiceLocator.shared.analytics,
-                                                            composerDraftService: ComposerDraftServiceMock())
+                                                            composerDraftService: ComposerDraftServiceMock(),
+                                                            roomID: "!mock:example.com")
     static let suggestions: [SuggestionItem] = [.user(item: MentionSuggestionItem(id: "@user_mention_1:matrix.org", displayName: "User 1", avatarURL: nil, range: .init())),
                                                 .user(item: MentionSuggestionItem(id: "@user_mention_2:matrix.org", displayName: "User 2", avatarURL: URL.documentsDirectory, range: .init()))]
     
@@ -450,7 +457,8 @@ extension ComposerToolbar {
                                                  mediaProvider: MediaProviderMock(configuration: .init()),
                                                  mentionDisplayHelper: ComposerMentionDisplayHelper.mock,
                                                  analyticsService: ServiceLocator.shared.analytics,
-                                                 composerDraftService: ComposerDraftServiceMock())
+                                                 composerDraftService: ComposerDraftServiceMock(),
+                                                 roomID: "!mock:example.com")
             model.state.composerEmpty = focused
             return model
         }
@@ -467,7 +475,8 @@ extension ComposerToolbar {
                                                  mediaProvider: MediaProviderMock(configuration: .init()),
                                                  mentionDisplayHelper: ComposerMentionDisplayHelper.mock,
                                                  analyticsService: ServiceLocator.shared.analytics,
-                                                 composerDraftService: ComposerDraftServiceMock())
+                                                 composerDraftService: ComposerDraftServiceMock(),
+                                                 roomID: "!mock:example.com")
             model.state.composerEmpty = focused
             return model
         }
@@ -484,7 +493,8 @@ extension ComposerToolbar {
                                                  mediaProvider: MediaProviderMock(configuration: .init()),
                                                  mentionDisplayHelper: ComposerMentionDisplayHelper.mock,
                                                  analyticsService: ServiceLocator.shared.analytics,
-                                                 composerDraftService: ComposerDraftServiceMock())
+                                                 composerDraftService: ComposerDraftServiceMock(),
+                                                 roomID: "!mock:example.com")
             model.state.composerMode = .recordVoiceMessage(state: AudioRecorderState())
             return model
         }
@@ -502,7 +512,8 @@ extension ComposerToolbar {
                                                  mediaProvider: MediaProviderMock(configuration: .init()),
                                                  mentionDisplayHelper: ComposerMentionDisplayHelper.mock,
                                                  analyticsService: ServiceLocator.shared.analytics,
-                                                 composerDraftService: ComposerDraftServiceMock())
+                                                 composerDraftService: ComposerDraftServiceMock(),
+                                                 roomID: "!mock:example.com")
             model.state.composerMode = .previewVoiceMessage(state: AudioPlayerState(id: .recorderPreview,
                                                                                     title: L10n.commonVoiceMessage,
                                                                                     duration: 10.0),
@@ -523,7 +534,8 @@ extension ComposerToolbar {
                                                  mediaProvider: MediaProviderMock(configuration: .init()),
                                                  mentionDisplayHelper: ComposerMentionDisplayHelper.mock,
                                                  analyticsService: ServiceLocator.shared.analytics,
-                                                 composerDraftService: ComposerDraftServiceMock())
+                                                 composerDraftService: ComposerDraftServiceMock(),
+                                                 roomID: "!mock:example.com")
             model.state.composerMode = isLoading ? .reply(eventID: UUID().uuidString,
                                                           replyDetails: .loading(eventID: ""),
                                                           isThread: false) :

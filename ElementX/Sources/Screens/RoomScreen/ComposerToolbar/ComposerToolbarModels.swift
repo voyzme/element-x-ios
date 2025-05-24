@@ -72,6 +72,7 @@ struct ComposerToolbarViewState: BindableState {
     var audioRecorderState: AudioRecorderState
     var currentTranscript = ""
     var showTranscript = false
+    var roomID: String
     
     var bindings: ComposerToolbarViewStateBindings
 
