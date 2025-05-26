@@ -240,10 +240,11 @@ struct RoomScreen: View {
         
         if !ProcessInfo.processInfo.isiOSAppOnMac {
             ToolbarItem(placement: .primaryAction) {
-                if roomContext.viewState.shouldShowCallButton {
-                    callButton
-                        .disabled(!roomContext.viewState.canJoinCall)
-                }
+                // Disabled for now to fix iPadOS layout issues
+                // if roomContext.viewState.shouldShowCallButton {
+                //     callButton
+                //         .disabled(!roomContext.viewState.canJoinCall)
+                // }
             }
         }
     }

@@ -67,9 +67,9 @@ struct RoomDetailsScreenViewState: BindableState {
     
     var shortcuts: [RoomDetailsScreenViewShortcut] {
         var shortcuts: [RoomDetailsScreenViewShortcut] = [.mute]
-        if !ProcessInfo.processInfo.isiOSAppOnMac, canJoinCall {
-            shortcuts.append(.call)
-        }
+//        if !ProcessInfo.processInfo.isiOSAppOnMac, canJoinCall {
+//            shortcuts.append(.call)
+//        }
         if dmRecipient == nil, canInviteUsers {
             shortcuts.append(.invite)
         }
@@ -201,7 +201,7 @@ enum RoomDetailsScreenViewAction {
 enum RoomDetailsScreenViewShortcut {
     case share(link: URL)
     case mute
-    case call
+//    case call
     case invite
 }
 
