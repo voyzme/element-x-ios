@@ -53,19 +53,22 @@ struct VoiceMessageRoomTimelineView: View {
                                 .frame(width: 25, height: 25)
                                 .background(showTranscription ? Color.blue : Color.compound.bgSubtlePrimary)
                                 .cornerRadius(8)
+                                .padding(.leading, 8)
                         }
                         
                         // Summary/topics button
-                        Button(action: {
-                            showTopicsModal = true
-                        }) {
-                            Text("S")
-                                .font(.system(size: 16, weight: .bold, design: .default))
-                                .foregroundColor(.primary)
-                                .frame(width: 25, height: 25)
-                                .background(Color.compound.bgSubtlePrimary)
-                                .cornerRadius(8)
-                        }
+                        /*
+                         Button(action: {
+                             showTopicsModal = true
+                         }) {
+                             Text("S")
+                                 .font(.system(size: 16, weight: .bold, design: .default))
+                                 .foregroundColor(.primary)
+                                 .frame(width: 25, height: 25)
+                                 .background(Color.compound.bgSubtlePrimary)
+                                 .cornerRadius(8)
+                         }
+                         */
                     }
                 }
                 

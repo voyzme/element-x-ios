@@ -100,13 +100,13 @@ struct RoomDetailsScreen: View {
                         CompoundIcon(\.shareIos)
                     }
                     .buttonStyle(FormActionButtonStyle(title: L10n.actionShare))
-                case .call:
-                    Button {
-                        context.send(viewAction: .processTapCall)
-                    } label: {
-                        CompoundIcon(\.videoCall)
-                    }
-                    .buttonStyle(FormActionButtonStyle(title: L10n.actionCall))
+//                case .call:
+//                    Button {
+//                        context.send(viewAction: .processTapCall)
+//                    } label: {
+//                        CompoundIcon(\.videoCall)
+//                    }
+//                    .buttonStyle(FormActionButtonStyle(title: L10n.actionCall))
                 case .invite:
                     Button {
                         context.send(viewAction: .processTapInvite)
