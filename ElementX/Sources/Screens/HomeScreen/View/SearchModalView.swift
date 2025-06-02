@@ -460,12 +460,13 @@ struct SearchModalView: View {
                             if let jsonData = messageContent.body.data(using: .utf8),
                                let jsonDict = try? JSONSerialization.jsonObject(with: jsonData) as? [String: Any] {
                                 // Extract the summary if available
-                                if let summary = jsonDict["summary"] as? String {
-                                    body = summary
-                                } else if let refinedTranscription = jsonDict["refined_transcription"] as? String {
-                                    body = refinedTranscription
+                                if let summaries = jsonDict["summaries"] as? [String], !summaries.isEmpty {
+                                    // Use the first summary from the list
+                                    body = summaries[0]
+                                } else if let refinedText = jsonDict["refined_text"] as? String {
+                                    body = refinedText
                                 } else {
-                                    // Fallback to the raw body if we can't extract the summary
+                                    // Fallback to the raw body if we can't extract the summary or refined text
                                     body = messageContent.body
                                 }
                             } else {

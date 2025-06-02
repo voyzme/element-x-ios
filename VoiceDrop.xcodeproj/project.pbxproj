@@ -7744,14 +7744,14 @@
 				CODE_SIGN_ENTITLEMENTS = ElementX/SupportingFiles/ElementX.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = "$(CURRENT_PROJECT_VERSION)";
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = L9RH9A4FX5;
 				INFOPLIST_FILE = ElementX/SupportingFiles/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.1;
+				MARKETING_VERSION = 1.0.2;
 				OTHER_SWIFT_FLAGS = "-DIS_MAIN_APP";
 				PILLS_UT_TYPE_IDENTIFIER = "$(BASE_BUNDLE_IDENTIFIER).pills";
 				PRODUCT_BUNDLE_IDENTIFIER = "$(BASE_BUNDLE_IDENTIFIER)";
@@ -7852,14 +7852,14 @@
 				CODE_SIGN_ENTITLEMENTS = ElementX/SupportingFiles/ElementX.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = "$(CURRENT_PROJECT_VERSION)";
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = L9RH9A4FX5;
 				INFOPLIST_FILE = ElementX/SupportingFiles/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.1;
+				MARKETING_VERSION = 1.0.2;
 				OTHER_SWIFT_FLAGS = "-DIS_MAIN_APP";
 				PILLS_UT_TYPE_IDENTIFIER = "$(BASE_BUNDLE_IDENTIFIER).pills";
 				PRODUCT_BUNDLE_IDENTIFIER = "$(BASE_BUNDLE_IDENTIFIER)";

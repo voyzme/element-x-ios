@@ -8,7 +8,6 @@
 import Combine
 import Foundation
 
-// Define the necessary types here to avoid circular dependencies
 /// Data structure to hold refined STT information for voice messages
 struct RefinedSTTData: Hashable {
     /// The event ID of the transcription event
@@ -23,22 +22,11 @@ struct RefinedSTTData: Hashable {
     /// Timestamp when the transcription was created
     let timestamp: Date
     
-    /// Parsed summary from the JSON, if available
-    let summary: String?
+    /// Parsed summaries from the JSON, if available
+    let summaries: [String]?
     
     /// Parsed refined transcription from the JSON, if available
     let refinedTranscription: String?
-    
-    /// Topics with suggested replies parsed from the JSON, if available
-    let topics: [Topic]?
-    
-    /// Topic with suggested replies
-    struct Topic: Identifiable, Hashable {
-        let topic: String
-        let responses: [String]
-        
-        var id: String { topic }
-    }
     
     init(eventId: String, referencedEventId: String, refinedSttBody: String, timestamp: Date) {
         self.eventId = eventId
@@ -48,44 +36,26 @@ struct RefinedSTTData: Hashable {
         
         // Parse JSON if possible
         let parsedData = Self.parseJSON(refinedSttBody)
-        summary = parsedData.summary
+        summaries = parsedData.summaries
         refinedTranscription = parsedData.refinedTranscription
-        topics = parsedData.topics
     }
     
     /// Parse the JSON refined STT body to extract structured data
-    private static func parseJSON(_ json: String) -> (summary: String?, refinedTranscription: String?, topics: [Topic]?) {
+    private static func parseJSON(_ json: String) -> (summaries: [String]?, refinedTranscription: String?) {
         guard !json.isEmpty, let jsonData = json.data(using: .utf8) else {
-            return (nil, nil, nil)
+            return (nil, nil)
         }
         
         do {
             // Use JSONSerialization for better performance
             if let parsedJSON = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any] {
-                // Extract summary
-                let summary = parsedJSON["summary"] as? String
+                // Extract refined transcription - now under "refined_text" key
+                let refinedTranscription = parsedJSON["refined_text"] as? String
                 
-                // Extract refined transcription
-                let refinedTranscription = parsedJSON["refined_transcription"] as? String
+                // Extract summaries array
+                let summaries = parsedJSON["summaries"] as? [String]
                 
-                // Extract topics and responses
-                var topics: [Topic]? = nil
-                if let topicsArray = parsedJSON["topics"] as? [[String: Any]] {
-                    topics = topicsArray.compactMap { topicDict -> Topic? in
-                        guard let topicName = topicDict["topic"] as? String,
-                              let responses = topicDict["responses"] as? [String] else {
-                            return nil
-                        }
-                        return Topic(topic: topicName, responses: responses)
-                    }
-                    
-                    // Only return topics if we have at least one valid topic
-                    if topics?.isEmpty == true {
-                        topics = nil
-                    }
-                }
-                
-                return (summary, refinedTranscription, topics)
+                return (summaries, refinedTranscription)
             }
         } catch {
             #if DEBUG
@@ -93,7 +63,31 @@ struct RefinedSTTData: Hashable {
             #endif
         }
         
-        return (nil, nil, nil)
+        return (nil, nil)
+    }
+    
+    /// Get the primary summary (first one) for backward compatibility
+    var summary: String? {
+        summaries?.first
+    }
+    
+    /// Topic structure for voice message topics
+    struct Topic: Hashable, Identifiable {
+        let id = UUID()
+        let text: String
+        let responses: [String]
+        
+        init(text: String, responses: [String] = ["👍", "👎", "🤔"]) {
+            self.text = text
+            self.responses = responses
+        }
+    }
+    
+    /// Parsed topics from the JSON, if available
+    var topics: [Topic]? {
+        // For now, if we have summaries, create topics from them
+        // In the future, this would parse actual topics from the JSON
+        summaries?.map { Topic(text: $0) }
     }
 }
 

@@ -362,6 +362,10 @@ class VoiceMessageRecorder: VoiceMessageRecorderProtocol {
         recordingCancelled = false
         
         await audioRecorder.stopRecording()
+        
+        // Add a small delay to ensure transcription has time to complete
+        try? await Task.sleep(nanoseconds: 500_000_000) // 500ms delay
+        
         // Stop transcription and get the final transcript
         
         if useAppleTranscription {
