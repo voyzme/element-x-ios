@@ -62,30 +62,34 @@ struct VoiceMessageRoomTimelineView: View {
                         Group {
                             if let summaries = refinedSTTData.summaries, let refinedTranscription = refinedSTTData.refinedTranscription {
                                 // Display either summary or refined transcription based on toggle state
-                                ZStack(alignment: .topTrailing) {
-                                    ScrollView {
-                                        if showTranscription {
+                                Group {
+                                    if showTranscription {
+                                        // Show transcription
+                                        ScrollView {
                                             Text(refinedTranscription)
                                                 .font(.compound.bodyMD)
                                                 .foregroundColor(.compound.textPrimary)
                                                 .padding(8)
-                                        } else if let summaries = refinedSTTData.summaries, !summaries.isEmpty {
+                                                .frame(maxWidth: .infinity, alignment: .leading)
+                                        }
+                                        .frame(maxHeight: 150)
+                                        .frame(maxWidth: 300)
+                                        .background(Color.compound.bgSubtleSecondary)
+                                        .cornerRadius(8)
+                                    } else if let summaries = refinedSTTData.summaries, !summaries.isEmpty {
+                                        // Show summary
+                                        ScrollView {
                                             Text(summaries[min(currentSummaryIndex, summaries.count - 1)])
                                                 .font(.compound.bodyMD)
                                                 .foregroundColor(.compound.textPrimary)
                                                 .padding(8)
-                                        } else {
-                                            Text(summaries[currentSummaryIndex])
-                                                .font(.compound.bodyMD)
-                                                .foregroundColor(.compound.textPrimary)
-                                                .padding(8)
+                                                .frame(maxWidth: .infinity, alignment: .leading)
                                         }
+                                        .frame(maxHeight: 150)
+                                        .frame(maxWidth: 300)
+                                        .background(Color.compound.bgSubtleSecondary)
+                                        .cornerRadius(8)
                                     }
-                                    .frame(maxHeight: 150)
-                                    .frame(maxWidth: 300)
-                                    .background(Color.compound.bgSubtleSecondary)
-                                    .cornerRadius(8)
-                                    .transition(.opacity)
                                 }
                                 
                                 // Navigation buttons for summaries below the scroll view
@@ -104,6 +108,7 @@ struct VoiceMessageRoomTimelineView: View {
                                         .font(.compound.bodyMD)
                                         .foregroundColor(.compound.textPrimary)
                                         .padding(8)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
                                 }
                                 .frame(maxHeight: 150) // Set maximum height for the scroll view
                                 .background(Color.compound.bgSubtleSecondary)
@@ -115,6 +120,7 @@ struct VoiceMessageRoomTimelineView: View {
                                         .font(.compound.bodyMD)
                                         .foregroundColor(.compound.textPrimary)
                                         .padding(8)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
                                 }
                                 .frame(maxHeight: 150) // Set maximum height for the scroll view
                                 .background(Color.compound.bgSubtleSecondary)
@@ -127,6 +133,7 @@ struct VoiceMessageRoomTimelineView: View {
                                 .font(.compound.bodyMD)
                                 .foregroundColor(.compound.textPrimary)
                                 .padding(8)
+                                .frame(maxWidth: .infinity, alignment: .leading)
                         }
                         .frame(maxHeight: 150) // Set maximum height for the scroll view
                         .background(Color.compound.bgSubtleSecondary)
