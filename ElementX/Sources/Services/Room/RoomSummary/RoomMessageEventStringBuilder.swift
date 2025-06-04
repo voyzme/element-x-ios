@@ -78,11 +78,18 @@ struct RoomMessageEventStringBuilder {
                 if let jsonData = content.body.data(using: .utf8) {
                     do {
                         // Use JSONSerialization to avoid creating a new decoder for each message
-                        if let json = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any],
-                           let summary = json["summary"] as? String, !summary.isEmpty {
-                            message = AttributedString(summary)
+                        if let json = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any] {
+                            // Check if summaries is an array of strings
+                            if let summaries = json["summaries"] as? [String], !summaries.isEmpty {
+                                message = AttributedString(summaries[0])
+                                // Check if summary is a string (fallback for backward compatibility)
+                            } else if let summary = json["summary"] as? String, !summary.isEmpty {
+                                message = AttributedString(summary)
+                            } else {
+                                // If no summary found, just use the raw body
+                                message = AttributedString(content.body)
+                            }
                         } else {
-                            // If no summary found, just use the raw body
                             message = AttributedString(content.body)
                         }
                     } catch {

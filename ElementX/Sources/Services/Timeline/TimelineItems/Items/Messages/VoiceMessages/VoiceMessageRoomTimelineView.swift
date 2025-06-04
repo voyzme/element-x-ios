@@ -8,10 +8,6 @@
 import Foundation
 import SwiftUI
 
-// Import necessary frameworks
-import Foundation
-import SwiftUI
-
 struct VoiceMessageRoomTimelineView: View {
     @EnvironmentObject private var context: TimelineViewModel.Context
     @ObservedObject private var timelineItem: VoiceMessageRoomTimelineItem
@@ -20,7 +16,7 @@ struct VoiceMessageRoomTimelineView: View {
     
     // States for toggling between different views
     @State private var showTranscription = false
-    @State private var showTopicsModal = false
+    @State private var currentSummaryIndex = 0
     
     init(timelineItem: VoiceMessageRoomTimelineItem, playerState: AudioPlayerState) {
         self.timelineItem = timelineItem
@@ -28,115 +24,121 @@ struct VoiceMessageRoomTimelineView: View {
     }
     
     var body: some View {
-        TimelineStyler(timelineItem: timelineItem) {
-            VStack(alignment: .leading, spacing: 8) {
-                HStack(alignment: .center, spacing: 8) {
-                    VoiceMessageRoomPlaybackView(playerState: playerState,
-                                                 onPlayPause: onPlaybackPlayPause,
-                                                 onSeek: { onPlaybackSeek($0) },
-                                                 onScrubbing: { onPlaybackScrubbing($0) })
-                        .fixedSize(horizontal: false, vertical: true)
-                        .frame(maxWidth: 400)
-                    
-                    // Only show buttons if we have parsed data from the refined STT
-                    if let refinedSTTData = timelineItem.content.refinedSTTData,
-                       refinedSTTData.summary != nil || refinedSTTData.refinedTranscription != nil || refinedSTTData.topics != nil {
-                        // Transcription toggle button
-                        Button(action: {
-                            withAnimation {
-                                showTranscription.toggle()
-                            }
-                        }) {
-                            Text("T")
-                                .font(.system(size: 16, weight: .bold, design: .default))
-                                .foregroundColor(showTranscription ? .white : .primary)
-                                .frame(width: 25, height: 25)
-                                .background(showTranscription ? Color.blue : Color.compound.bgSubtlePrimary)
-                                .cornerRadius(8)
-                                .padding(.leading, 8)
-                        }
+        ZStack(alignment: .topTrailing) {
+            // Main content
+            TimelineStyler(timelineItem: timelineItem) {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(alignment: .center, spacing: 8) {
+                        VoiceMessageRoomPlaybackView(playerState: playerState,
+                                                     onPlayPause: onPlaybackPlayPause,
+                                                     onSeek: { onPlaybackSeek($0) },
+                                                     onScrubbing: { onPlaybackScrubbing($0) })
+                            .fixedSize(horizontal: false, vertical: true)
+                            .frame(maxWidth: 400)
                         
-                        // Summary/topics button
-                        /*
-                         Button(action: {
-                             showTopicsModal = true
-                         }) {
-                             Text("S")
-                                 .font(.system(size: 16, weight: .bold, design: .default))
-                                 .foregroundColor(.primary)
-                                 .frame(width: 25, height: 25)
-                                 .background(Color.compound.bgSubtlePrimary)
-                                 .cornerRadius(8)
-                         }
-                         */
-                    }
-                }
-                
-                // Display refined STT content if available
-                if let refinedSTTData = timelineItem.content.refinedSTTData {
-                    Group {
-                        if let summary = refinedSTTData.summary, let refinedTranscription = refinedSTTData.refinedTranscription {
-                            // Display either summary or refined transcription based on toggle state
-                            ScrollView {
-                                Text(showTranscription ? refinedTranscription : summary)
-                                    .font(.compound.bodyMD)
-                                    .foregroundColor(.compound.textPrimary)
-                                    .padding(8)
+                        // Only show buttons if we have parsed data from the refined STT
+                        if let refinedSTTData = timelineItem.content.refinedSTTData,
+                           refinedSTTData.summaries != nil || refinedSTTData.refinedTranscription != nil {
+                            // Transcription toggle button
+                            Button(action: {
+                                withAnimation {
+                                    showTranscription.toggle()
+                                }
+                            }) {
+                                Text("T")
+                                    .font(.system(size: 16, weight: .bold, design: .default))
+                                    .foregroundColor(showTranscription ? .white : .primary)
+                                    .frame(width: 25, height: 25)
+                                    .background(showTranscription ? Color.blue : Color.compound.bgSubtlePrimary)
+                                    .cornerRadius(8)
+                                    .padding(.leading, 8)
+                                // Navigation buttons for summaries as part of the scroll view
                             }
-                            .frame(maxHeight: 150) // Set maximum height for the scroll view
-                            .background(Color.compound.bgSubtleSecondary)
-                            .cornerRadius(8)
-                            .transition(.opacity)
-                        } else if let summary = refinedSTTData.summary {
-                            // Only summary available
-                            ScrollView {
-                                Text(summary)
-                                    .font(.compound.bodyMD)
-                                    .foregroundColor(.compound.textPrimary)
-                                    .padding(8)
-                            }
-                            .frame(maxHeight: 150) // Set maximum height for the scroll view
-                            .background(Color.compound.bgSubtleSecondary)
-                            .cornerRadius(8)
-                        } else if let refinedTranscription = refinedSTTData.refinedTranscription {
-                            // Only refined transcription available
-                            ScrollView {
-                                Text(refinedTranscription)
-                                    .font(.compound.bodyMD)
-                                    .foregroundColor(.compound.textPrimary)
-                                    .padding(8)
-                            }
-                            .frame(maxHeight: 150) // Set maximum height for the scroll view
-                            .background(Color.compound.bgSubtleSecondary)
-                            .cornerRadius(8)
-                        } else {
-                            // Fallback to displaying raw refined STT body
-                            ScrollView {
-                                Text(refinedSTTData.refinedSttBody)
-                                    .font(.compound.bodyMD)
-                                    .foregroundColor(.compound.textPrimary)
-                                    .padding(8)
-                            }
-                            .frame(maxHeight: 150) // Set maximum height for the scroll view
-                            .background(Color.compound.bgSubtleSecondary)
-                            .cornerRadius(8)
                         }
                     }
-                } else {
-                    ScrollView {
-                        Text("Processing voice message...")
-                            .font(.compound.bodyMD)
-                            .foregroundColor(.compound.textPrimary)
-                            .padding(8)
+                    
+                    // Display refined STT content if available
+                    if let refinedSTTData = timelineItem.content.refinedSTTData {
+                        Group {
+                            if let summaries = refinedSTTData.summaries, let refinedTranscription = refinedSTTData.refinedTranscription {
+                                // Display either summary or refined transcription based on toggle state
+                                Group {
+                                    if showTranscription {
+                                        // Show transcription
+                                        ScrollView {
+                                            Text(refinedTranscription)
+                                                .font(.compound.bodyMD)
+                                                .foregroundColor(.compound.textPrimary)
+                                                .padding(8)
+                                                .frame(maxWidth: .infinity, alignment: .leading)
+                                        }
+                                        .frame(maxHeight: 150)
+                                        .frame(maxWidth: 300)
+                                        .background(Color.compound.bgSubtleSecondary)
+                                        .cornerRadius(8)
+                                    } else if let summaries = refinedSTTData.summaries, !summaries.isEmpty {
+                                        // Show summary
+                                        ScrollView {
+                                            Text(summaries[min(currentSummaryIndex, summaries.count - 1)])
+                                                .font(.compound.bodyMD)
+                                                .foregroundColor(.compound.textPrimary)
+                                                .padding(8)
+                                                .frame(maxWidth: .infinity, alignment: .leading)
+                                        }
+                                        .frame(maxHeight: 150)
+                                        .frame(maxWidth: 300)
+                                        .background(Color.compound.bgSubtleSecondary)
+                                        .cornerRadius(8)
+                                    }
+                                }
+                                
+                                // Navigation buttons for summaries below the scroll view
+                                if summaries.count > 1, !showTranscription {
+                                    HStack {
+                                        Spacer()
+                                        SummaryNavigationButtons(currentIndex: $currentSummaryIndex, summariesCount: summaries.count)
+                                            .padding(.top, -10)
+                                            .padding(.trailing, 2)
+                                    }
+                                }
+                            } else if let refinedTranscription = refinedSTTData.refinedTranscription {
+                                // Only refined transcription available
+                                ScrollView {
+                                    Text(refinedTranscription)
+                                        .font(.compound.bodyMD)
+                                        .foregroundColor(.compound.textPrimary)
+                                        .padding(8)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                }
+                                .frame(maxHeight: 150) // Set maximum height for the scroll view
+                                .background(Color.compound.bgSubtleSecondary)
+                                .cornerRadius(8)
+                            } else {
+                                // Fallback to displaying raw refined STT body
+                                ScrollView {
+                                    Text(refinedSTTData.refinedSttBody)
+                                        .font(.compound.bodyMD)
+                                        .foregroundColor(.compound.textPrimary)
+                                        .padding(8)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                }
+                                .frame(maxHeight: 150) // Set maximum height for the scroll view
+                                .background(Color.compound.bgSubtleSecondary)
+                                .cornerRadius(8)
+                            }
+                        }
+                    } else {
+                        ScrollView {
+                            Text("Processing voice message...")
+                                .font(.compound.bodyMD)
+                                .foregroundColor(.compound.textPrimary)
+                                .padding(8)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .frame(maxHeight: 150) // Set maximum height for the scroll view
+                        .background(Color.compound.bgSubtleSecondary)
+                        .cornerRadius(8)
                     }
-                    .frame(maxHeight: 150) // Set maximum height for the scroll view
-                    .background(Color.compound.bgSubtleSecondary)
-                    .cornerRadius(8)
-                }
-            }
-            .sheet(isPresented: $showTopicsModal) {
-                if let refinedSTTData = timelineItem.content.refinedSTTData, let topics = refinedSTTData.topics {
-                    TopicsModalView(topics: topics, timelineItem: timelineItem, context: context)
                 }
             }
         }
@@ -163,116 +165,44 @@ struct VoiceMessageRoomTimelineView: View {
     }
 }
 
-// Response button component for emoji buttons
-struct ResponseButton: View {
-    let response: String
-    let isSelected: Bool
-    let action: () -> Void
+// Custom floating button component for summary navigation
+struct SummaryNavigationButtons: View {
+    @Binding var currentIndex: Int
+    let summariesCount: Int
     
     var body: some View {
-        Button(action: action) {
-            Text(response)
-                .font(.system(size: 20))
-                .padding(8)
-                .background(isSelected ? Color.compound.bgSubtlePrimary : Color.clear)
-                .cornerRadius(8)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(isSelected ? Color.blue : Color.gray.opacity(0.3), lineWidth: 1)
-                )
-        }
-        .buttonStyle(BorderlessButtonStyle())
-    }
-}
-
-// Topic section component with topic box and emoji response buttons
-struct TopicSection: View {
-    let topic: RefinedSTTData.Topic
-    let timelineItem: VoiceMessageRoomTimelineItem
-    let context: TimelineViewModel.Context
-    let selectedResponse: String?
-    let onResponseSelected: (String) -> Void
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            // Topic box with original case
-            VStack(alignment: .leading, spacing: 12) {
-                // Topic text
-                Text(topic.topic)
-                    .font(.body)
-                    .lineLimit(2)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                
-                // Emoji response buttons in a row at the bottom right
-                HStack {
-                    Spacer()
-                    HStack(spacing: 6) {
-                        ForEach(topic.responses, id: \.self) { response in
-                            ResponseButton(response: response,
-                                           isSelected: selectedResponse == response,
-                                           action: {
-                                               // Create reply draft with the selected response
-                                               // Include the topic name in the reply text to make it clear what the voice message was about
-                                               let replyText = "Re: \(topic.topic) → \(response)"
-                                    
-                                               // First start replying to the message
-                                               context.send(viewAction: .handleTimelineItemMenuAction(itemID: timelineItem.id,
-                                                                                                      action: .reply(isThread: false)))
-                                    
-                                               // Wait a moment for the reply to be set up, then set the text
-                                               DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                                   // Set the draft text using notification
-                                                   NotificationCenter.default.post(name: Notification.Name("ElementX.SetDraftText"),
-                                                                                   object: nil,
-                                                                                   userInfo: ["text": replyText])
-                                               }
-                                    
-                                               // Notify parent about selection
-                                               onResponseSelected(response)
-                                           })
-                        }
+        HStack(spacing: 8) {
+            // Minus button to move to previous summary
+            if currentIndex > 0 {
+                Button(action: {
+                    if currentIndex > 0 {
+                        currentIndex -= 1
                     }
+                }) {
+                    Image(systemName: "minus.circle.fill")
+                        .resizable()
+                        .frame(width: 28, height: 28)
+                        .foregroundColor(.compound.iconPrimary)
+                        .background(Color.white.opacity(0.8))
+                        .clipShape(Circle())
                 }
             }
-            .padding(12)
-            .background(Color.compound.bgSubtlePrimary)
-            .cornerRadius(8)
-        }
-    }
-}
-
-// Modal view for displaying topics and responses
-struct TopicsModalView: View {
-    let topics: [RefinedSTTData.Topic]
-    let timelineItem: VoiceMessageRoomTimelineItem
-    let context: TimelineViewModel.Context
-    @State private var selectedResponse: String? = nil
-    @Environment(\.presentationMode) var presentationMode
-    
-    var body: some View {
-        NavigationView {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    ForEach(topics) { topic in
-                        TopicSection(topic: topic,
-                                     timelineItem: timelineItem,
-                                     context: context,
-                                     selectedResponse: selectedResponse,
-                                     onResponseSelected: { response in
-                                         // Show feedback
-                                         selectedResponse = response
-                                
-                                         // Dismiss the modal after a short delay
-                                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                                             presentationMode.wrappedValue.dismiss()
-                                         }
-                                     })
-                    }
+            
+            // Plus button to move to next summary
+            Button(action: {
+                if currentIndex < summariesCount - 1 {
+                    currentIndex += 1
                 }
-                .padding(16)
+            }) {
+                Image(systemName: "plus.circle.fill")
+                    .resizable()
+                    .frame(width: 28, height: 28)
+                    .foregroundColor(.compound.iconPrimary)
+                    .background(Color.white.opacity(0.8))
+                    .clipShape(Circle())
             }
-            .navigationTitle("Topics")
-            .navigationBarTitleDisplayMode(.inline)
+            .disabled(currentIndex >= summariesCount - 1)
+            .opacity(currentIndex >= summariesCount - 1 ? 0.5 : 1.0)
         }
     }
 }
