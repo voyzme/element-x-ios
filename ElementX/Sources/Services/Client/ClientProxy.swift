@@ -484,6 +484,35 @@ class ClientProxy: ClientProxyProtocol {
         }
     }
 
+    func getAccountData(for type: String) async -> Result<String?, ClientProxyError> {
+        do {
+            // Use the correct parameter name event_type instead of eventType
+            let jsonString = try await client.accountData(eventType: type)
+            return .success(jsonString)
+        } catch {
+            // If the error is a 404 (not found), return nil instead of an error
+            // This is a normal case when account data doesn't exist yet
+            if error.localizedDescription.contains("404") ||
+                error.localizedDescription.contains("not found") {
+                MXLog.info("No account data found for type: \(type), returning nil")
+                return .success(nil)
+            }
+            
+            MXLog.error("Failed getting account data with type: \(type) with error: \(error)")
+            return .failure(.sdkError(error))
+        }
+    }
+    
+    func setAccountData(type: String, content: String) async -> Result<Void, ClientProxyError> {
+        do {
+            try await client.setAccountData(eventType: type, content: content)
+            return .success(())
+        } catch {
+            MXLog.error("Failed setting account data with type: \(type) with error: \(error)")
+            return .failure(.sdkError(error))
+        }
+    }
+
     func routeContacts(messageContent: String, language: String) async -> Result<[String: Any], ClientProxyError> {
         do {
             let jsonString = try await client.routeContacts(messageContent: messageContent, language: language)
@@ -865,9 +894,12 @@ class ClientProxy: ClientProxyProtocol {
                 .finish()
             
             let roomListService = syncService.roomListService()
-            
+        
             let roomMessageEventStringBuilder = RoomMessageEventStringBuilder(attributedStringBuilder: AttributedStringBuilder(cacheKey: "roomList",
                                                                                                                                mentionBuilder: PlainMentionBuilder()), destination: .roomList)
+            // Set the current user ID for room summary filtering
+            RoomMessageEventStringBuilder.setCurrentUserID(userID)
+            
             let eventStringBuilder = RoomEventStringBuilder(stateEventStringBuilder: RoomStateEventStringBuilder(userID: userID, shouldDisambiguateDisplayNames: false),
                                                             messageEventStringBuilder: roomMessageEventStringBuilder,
                                                             shouldDisambiguateDisplayNames: false,

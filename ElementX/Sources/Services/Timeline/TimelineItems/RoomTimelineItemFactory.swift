@@ -115,6 +115,8 @@ struct RoomTimelineItemFactory: RoomTimelineItemFactoryProtocol {
             let success = processRefinedSttEvent(eventItemProxy, refinedSTTContent: refinedSTTContent)
             MXLog.debug("Processed .refinedSTT event, success: \(success)")
             return nil
+        case .roomSummary:
+            return nil
         case .other:
             return nil
         }
@@ -839,6 +841,8 @@ struct RoomTimelineItemFactory: RoomTimelineItemFactoryProtocol {
         case .rawStt:
             replyContent = .text(.init(body: L10n.commonUnsupportedEvent))
         case .refinedStt:
+            replyContent = .text(.init(body: L10n.commonUnsupportedEvent))
+        case .roomSummary:
             replyContent = .text(.init(body: L10n.commonUnsupportedEvent))
         case .other, .none:
             replyContent = .text(.init(body: L10n.commonUnsupportedEvent))
