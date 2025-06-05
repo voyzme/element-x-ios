@@ -9,6 +9,8 @@ import Foundation
 import MatrixRustSDK
 
 struct RoomMessageEventStringBuilder {
+    // Current user ID for filtering summaries
+    private static var currentUserID: String?
     enum Destination {
         /// Strings show on the room list as the last message
         /// The sender will be prefixed in bold
@@ -103,6 +105,31 @@ struct RoomMessageEventStringBuilder {
             } else {
                 message = AttributedString(L10n.commonVoiceMessage)
             }
+        case .roomSummary(let content):
+            // Parse the JSON body to extract the current user's summary
+            if let jsonData = content.body.data(using: .utf8) {
+                do {
+                    // Use JSONSerialization to parse the JSON
+                    if let summaries = try JSONSerialization.jsonObject(with: jsonData) as? [String: String] {
+                        // Try to get the current user's summary if we have their ID
+                        if let userID = RoomMessageEventStringBuilder.currentUserID, let userSummary = summaries[userID], !userSummary.isEmpty {
+                            // Use the current user's summary
+                            message = AttributedString(userSummary)
+                        } else {
+                            message = AttributedString("No unread messages")
+                        }
+                    } else {
+                        // If JSON parsing fails, just use the raw body
+                        message = AttributedString(content.body)
+                    }
+                } catch {
+                    // If JSON parsing fails, just use the raw body
+                    message = AttributedString(content.body)
+                }
+            } else {
+                // If can't convert to data, just use the raw body
+                message = AttributedString(content.body)
+            }
         case .other(_, let body):
             message = AttributedString(body)
         }
@@ -138,5 +165,11 @@ struct RoomMessageEventStringBuilder {
     
     private func attributedMessageFrom(formattedBody: FormattedBody?) -> AttributedString? {
         formattedBody.flatMap { attributedStringBuilder.fromHTML($0.body) }
+    }
+    
+    /// Set the current user ID for filtering room summaries
+    /// - Parameter userID: The current user's Matrix ID
+    static func setCurrentUserID(_ userID: String) {
+        currentUserID = userID
     }
 }

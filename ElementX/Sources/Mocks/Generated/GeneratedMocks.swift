@@ -3087,6 +3087,146 @@ class ClientProxyMock: ClientProxyProtocol {
             return searchRoomsQueryRoomIDLanguageReturnValue
         }
     }
+    //MARK: - getAccountData
+
+    var getAccountDataForUnderlyingCallsCount = 0
+    var getAccountDataForCallsCount: Int {
+        get {
+            if Thread.isMainThread {
+                return getAccountDataForUnderlyingCallsCount
+            } else {
+                var returnValue: Int? = nil
+                DispatchQueue.main.sync {
+                    returnValue = getAccountDataForUnderlyingCallsCount
+                }
+
+                return returnValue!
+            }
+        }
+        set {
+            if Thread.isMainThread {
+                getAccountDataForUnderlyingCallsCount = newValue
+            } else {
+                DispatchQueue.main.sync {
+                    getAccountDataForUnderlyingCallsCount = newValue
+                }
+            }
+        }
+    }
+    var getAccountDataForCalled: Bool {
+        return getAccountDataForCallsCount > 0
+    }
+    var getAccountDataForReceivedType: String?
+    var getAccountDataForReceivedInvocations: [String] = []
+
+    var getAccountDataForUnderlyingReturnValue: Result<String?, ClientProxyError>!
+    var getAccountDataForReturnValue: Result<String?, ClientProxyError>! {
+        get {
+            if Thread.isMainThread {
+                return getAccountDataForUnderlyingReturnValue
+            } else {
+                var returnValue: Result<String?, ClientProxyError>? = nil
+                DispatchQueue.main.sync {
+                    returnValue = getAccountDataForUnderlyingReturnValue
+                }
+
+                return returnValue!
+            }
+        }
+        set {
+            if Thread.isMainThread {
+                getAccountDataForUnderlyingReturnValue = newValue
+            } else {
+                DispatchQueue.main.sync {
+                    getAccountDataForUnderlyingReturnValue = newValue
+                }
+            }
+        }
+    }
+    var getAccountDataForClosure: ((String) async -> Result<String?, ClientProxyError>)?
+
+    func getAccountData(for type: String) async -> Result<String?, ClientProxyError> {
+        getAccountDataForCallsCount += 1
+        getAccountDataForReceivedType = type
+        DispatchQueue.main.async {
+            self.getAccountDataForReceivedInvocations.append(type)
+        }
+        if let getAccountDataForClosure = getAccountDataForClosure {
+            return await getAccountDataForClosure(type)
+        } else {
+            return getAccountDataForReturnValue
+        }
+    }
+    //MARK: - setAccountData
+
+    var setAccountDataTypeContentUnderlyingCallsCount = 0
+    var setAccountDataTypeContentCallsCount: Int {
+        get {
+            if Thread.isMainThread {
+                return setAccountDataTypeContentUnderlyingCallsCount
+            } else {
+                var returnValue: Int? = nil
+                DispatchQueue.main.sync {
+                    returnValue = setAccountDataTypeContentUnderlyingCallsCount
+                }
+
+                return returnValue!
+            }
+        }
+        set {
+            if Thread.isMainThread {
+                setAccountDataTypeContentUnderlyingCallsCount = newValue
+            } else {
+                DispatchQueue.main.sync {
+                    setAccountDataTypeContentUnderlyingCallsCount = newValue
+                }
+            }
+        }
+    }
+    var setAccountDataTypeContentCalled: Bool {
+        return setAccountDataTypeContentCallsCount > 0
+    }
+    var setAccountDataTypeContentReceivedArguments: (type: String, content: String)?
+    var setAccountDataTypeContentReceivedInvocations: [(type: String, content: String)] = []
+
+    var setAccountDataTypeContentUnderlyingReturnValue: Result<Void, ClientProxyError>!
+    var setAccountDataTypeContentReturnValue: Result<Void, ClientProxyError>! {
+        get {
+            if Thread.isMainThread {
+                return setAccountDataTypeContentUnderlyingReturnValue
+            } else {
+                var returnValue: Result<Void, ClientProxyError>? = nil
+                DispatchQueue.main.sync {
+                    returnValue = setAccountDataTypeContentUnderlyingReturnValue
+                }
+
+                return returnValue!
+            }
+        }
+        set {
+            if Thread.isMainThread {
+                setAccountDataTypeContentUnderlyingReturnValue = newValue
+            } else {
+                DispatchQueue.main.sync {
+                    setAccountDataTypeContentUnderlyingReturnValue = newValue
+                }
+            }
+        }
+    }
+    var setAccountDataTypeContentClosure: ((String, String) async -> Result<Void, ClientProxyError>)?
+
+    func setAccountData(type: String, content: String) async -> Result<Void, ClientProxyError> {
+        setAccountDataTypeContentCallsCount += 1
+        setAccountDataTypeContentReceivedArguments = (type: type, content: content)
+        DispatchQueue.main.async {
+            self.setAccountDataTypeContentReceivedInvocations.append((type: type, content: content))
+        }
+        if let setAccountDataTypeContentClosure = setAccountDataTypeContentClosure {
+            return await setAccountDataTypeContentClosure(type, content)
+        } else {
+            return setAccountDataTypeContentReturnValue
+        }
+    }
     //MARK: - routeContacts
 
     var routeContactsMessageContentLanguageUnderlyingCallsCount = 0

@@ -832,9 +832,42 @@ class RoomFlowCoordinator: FlowCoordinatorProtocol {
             // Also save the selected language to UserDefaults for persistence
             if let userDefaults = UserDefaults(suiteName: "group.io.element.elementx") {
                 userDefaults.set(language.rawValue, forKey: "transcriptionLanguage")
+            
+                // Also save room-specific language preference
+                let roomKey = "transcriptionLanguage-\(self?.roomProxy.id ?? "")"
+                userDefaults.set(language.rawValue, forKey: roomKey)
+            }
+        
+            // Store the language preference in Matrix account data in a separate task
+            // to avoid potential memory issues with nested async operations
+            let roomID = self?.roomProxy.id ?? ""
+            let langValue = language.rawValue
+        
+            Task.detached {
+                do {
+                    // Create a simple dictionary with the room ID and language
+                    let roomLanguageData = [roomID: langValue]
+                
+                    // Convert to JSON string
+                    let jsonData = try JSONSerialization.data(withJSONObject: roomLanguageData)
+                    if let jsonString = String(data: jsonData, encoding: .utf8) {
+                        // Get a reference to the client proxy
+                        if let clientProxy = self?.userSession.clientProxy {
+                            // Store the account data using the Matrix Rust SDK
+                            let result = await clientProxy.setAccountData(type: "voicedrop.language", content: jsonString)
+                        
+                            if case .success = result {
+                                MXLog.info("Successfully stored language preference in account data")
+                            } else if case .failure(let error) = result {
+                                MXLog.error("Failed to store language preference in account data: \(error)")
+                            }
+                        }
+                    }
+                } catch {
+                    MXLog.error("Failed to store language preference in account data: \(error)")
+                }
             }
         }
-        
         // Present the coordinator
         navigationStackCoordinator.push(coordinator, animated: animated) { [weak self] in
             guard let self else { return }

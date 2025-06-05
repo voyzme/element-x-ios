@@ -135,6 +135,7 @@ class RoomTimelineProvider: RoomTimelineProviderProtocol {
                         case .location: msgTypeString = "location"
                         case .rawStt: msgTypeString = "rawStt"
                         case .refinedStt: msgTypeString = "refinedStt"
+                        case .roomSummary: msgTypeString = "roomSummary"
                         case .other: msgTypeString = "other"
                         }
                         MXLog.debug("Append: Message type enum case: \(msgTypeString)")
@@ -198,6 +199,7 @@ class RoomTimelineProvider: RoomTimelineProviderProtocol {
                     case .location: msgTypeString = "location"
                     case .rawStt: msgTypeString = "rawStt"
                     case .refinedStt: msgTypeString = "refinedStt"
+                    case .roomSummary: msgTypeString = "roomSummary"
                     case .other: msgTypeString = "other"
                     }
                     MXLog.debug("PushBack: Message type enum case: \(msgTypeString)")
@@ -264,6 +266,7 @@ class RoomTimelineProvider: RoomTimelineProviderProtocol {
                         case .location: msgTypeString = "location"
                         case .rawStt: msgTypeString = "rawStt"
                         case .refinedStt: msgTypeString = "refinedStt"
+                        case .roomSummary: msgTypeString = "roomSummary"
                         case .other: msgTypeString = "other"
                         }
                         MXLog.debug("Reset: Message type enum case: \(msgTypeString)")

@@ -114,10 +114,10 @@ struct HomeScreenRoomCell: View {
                     CompoundIcon(\.notificationsOffSolid, size: .custom(15), relativeTo: .compound.bodyMD)
                         .accessibilityLabel(L10n.a11yNotificationsMuted)
                 }
-                
-                if room.badges.isMentionShown {
-                    mentionIcon
-                }
+                // TODO: Re-enable mentions but sanitize mentions first
+                // if room.badges.isMentionShown {
+                //    mentionIcon
+                // }
                 
                 if room.badges.isDotShown {
                     Circle()
@@ -136,8 +136,19 @@ struct HomeScreenRoomCell: View {
     @ViewBuilder
     private var lastMessage: some View {
         if let lastMessage = room.lastMessage {
-            Text(lastMessage)
-                .lastMessageFormatting()
+            // Extract just the message content without the sender name
+            // The format is typically "Sender: Message content"
+            let messageString = lastMessage.string
+            if let colonIndex = messageString.firstIndex(of: ":") {
+                // Get the part after the colon and trim any leading whitespace
+                let messageContent = messageString[messageString.index(after: colonIndex)...].trimmingCharacters(in: .whitespaces)
+                Text(AttributedString(messageContent))
+                    .lastMessageFormatting()
+            } else {
+                // Fallback to the original message if we can't find the colon separator
+                Text(lastMessage)
+                    .lastMessageFormatting()
+            }
         }
     }
 }
@@ -157,7 +168,7 @@ private extension View {
     func lastMessageFormatting() -> some View {
         font(.compound.bodyMD)
             .foregroundColor(.compound.textSecondary)
-            .lineLimit(2)
+            .lineLimit(6)
             .multilineTextAlignment(.leading)
     }
 }

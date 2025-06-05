@@ -96,6 +96,13 @@ struct NotificationContentBuilder {
     }
 
     private func processRoomMessage(notificationItem: NotificationItemProxyProtocol, messageType: MessageType, mediaProvider: MediaProviderProtocol?) async throws -> UNMutableNotificationContent {
+        // Suppress notifications for room summary events
+        if case .roomSummary = messageType {
+            // Return an empty notification that will be discarded
+            let emptyNotification = UNMutableNotificationContent()
+            return emptyNotification
+        }
+        
         var notification = try await processCommonRoomMessage(notificationItem: notificationItem, mediaProvider: mediaProvider)
         
         let displayName = notificationItem.senderDisplayName ?? notificationItem.roomDisplayName

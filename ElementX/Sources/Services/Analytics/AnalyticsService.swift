@@ -95,7 +95,7 @@ class AnalyticsService {
     /// Capture an event in the `client`.
     /// - Parameter event: The event to capture.
     private func capture(event: AnalyticsEventProtocol) {
-        MXLog.debug("\(event)")
+        MXLog.debug("AnalyticsService: \(event)")
         client.capture(event)
     }
 }

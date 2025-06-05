@@ -157,6 +157,10 @@ protocol ClientProxyProtocol: AnyObject, MediaLoaderProtocol {
     /// - Returns: A result containing either the search response as a dictionary or an error.
     func searchRooms(query: String, roomID: String?, language: String) async -> Result<[String: Any], ClientProxyError>
 
+    func getAccountData(for type: String) async -> Result<String?, ClientProxyError>
+
+    func setAccountData(type: String, content: String) async -> Result<Void, ClientProxyError>
+
     func routeContacts(messageContent: String, language: String) async -> Result<[String: Any], ClientProxyError>
     
     func uploadMedia(_ media: MediaInfo) async -> Result<String, ClientProxyError>
